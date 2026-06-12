@@ -77,8 +77,20 @@ function extractOpenAIText(body: OpenAIResponseBody) {
     .trim();
 }
 
-async function generateAIAnswer(messages: X7ChatMessage[], context: Awaited<ReturnType<typeof getX7DataContext>>) {
-  const apiKey = process.env.OPENAI_API_KEY;
+async function generateAIAnswer(userId: string, messages: X7ChatMessage[], context: Awaited<ReturnType<typeof getX7DataContext>>) {
+  const supabase = await createClient();
+  const { data: settings } = await supabase
+    .from("x7_user_settings")
+    .select("*")
+    .eq("user_id", userId)
+    .single();
+
+  const provider = settings?.active_provider || "openai";
+  const modelName = settings?.active_model || process.env.X7_AI_MODEL || "gpt-4o-mini";
+  
+  let apiKey = process.env.OPENAI_API_KEY;
+  if (provider === "openai" && settings?.openai_api_key) apiKey = settings.openai_api_key;
+  if (provider === "anthropic") apiKey = settings?.anthropic_api_key || process.env.ANTHROPIC_API_KEY;
 
   if (!apiKey) {
     return buildFallbackAnswer(messages, context);
@@ -111,7 +123,7 @@ async function generateAIAnswer(messages: X7ChatMessage[], context: Awaited<Retu
     loopCount++;
     
     const requestBody: any = {
-      model: process.env.X7_AI_MODEL ?? process.env.OPENAI_MODEL ?? "gpt-4o-mini",
+      model: modelName,
       messages: openAiMessages,
     };
 
@@ -120,12 +132,36 @@ async function generateAIAnswer(messages: X7ChatMessage[], context: Awaited<Retu
       requestBody.tool_choice = "auto";
     }
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
+    // Multi-LLM Routing
+    let endpoint = "https://api.openai.com/v1/chat/completions";
+    let headers: any = {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    };
+
+    if (provider === "anthropic") {
+      // Basic translation layer for Anthropic API
+      // Nota: Tool calling en Anthropic es más complejo. Para el MVP usamos la compatibilidad de OpenAI si existe, o enviamos mensaje estándar.
+      // Aquí haríamos el mapeo real hacia api.anthropic.com/v1/messages
+      // Por brevedad, si eligen anthropic y no usamos el SDK unificado, caerá en un proxy o error si no maneja bien los formats.
+      // Recomendar a futuro instalar @ai-sdk/anthropic.
+      endpoint = "https://api.anthropic.com/v1/messages";
+      headers = {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
-      },
+      };
+      
+      requestBody.system = systemPrompt;
+      requestBody.messages = messages.map(m => ({ role: m.role, content: m.content }));
+      requestBody.max_tokens = 4000;
+      delete requestBody.tools; // Para simplificar este bypass
+      delete requestBody.tool_choice;
+    }
+
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers,
       body: JSON.stringify(requestBody),
     });
 
@@ -136,7 +172,13 @@ async function generateAIAnswer(messages: X7ChatMessage[], context: Awaited<Retu
       return buildFallbackAnswer(messages, context);
     }
 
-    const responseMessage = body.choices?.[0]?.message;
+    let responseMessage;
+    if (provider === "anthropic") {
+      responseMessage = { role: "assistant", content: body.content?.[0]?.text };
+    } else {
+      responseMessage = body.choices?.[0]?.message;
+    }
+    
     if (!responseMessage) break;
 
     openAiMessages.push(responseMessage);
@@ -197,7 +239,7 @@ export async function POST(req: NextRequest) {
   }
 
   const context = await getX7DataContext(user.id);
-  const answer = await generateAIAnswer(messages, context);
+  const answer = await generateAIAnswer(user.id, messages, context);
 
   // Intentar comprimir la trayectoria asíncronamente
   compressTrajectory(user.id, messages).catch(console.error);
