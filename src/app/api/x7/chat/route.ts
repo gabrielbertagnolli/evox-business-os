@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getHermesDataContext, summarizeHermesDataContext } from "@/lib/hermes/context";
+import { getX7DataContext, summarizeX7DataContext } from "@/lib/x7/context";
 import { createClient } from "@/lib/supabase/server";
 
-interface HermesChatMessage {
+interface X7ChatMessage {
   id?: string;
   role: "assistant" | "user";
   content: string;
@@ -27,18 +27,18 @@ interface OpenAIResponseBody {
 const MAX_MESSAGES = 12;
 const MAX_MESSAGE_LENGTH = 4000;
 
-function normalizeMessages(value: unknown): HermesChatMessage[] {
+function normalizeMessages(value: unknown): X7ChatMessage[] {
   if (!Array.isArray(value)) {
     return [];
   }
 
   return value
-    .filter((message): message is HermesChatMessage => {
+    .filter((message): message is X7ChatMessage => {
       if (!message || typeof message !== "object") {
         return false;
       }
 
-      const candidate = message as Partial<HermesChatMessage>;
+      const candidate = message as Partial<X7ChatMessage>;
       return (candidate.role === "user" || candidate.role === "assistant") && typeof candidate.content === "string";
     })
     .slice(-MAX_MESSAGES)
@@ -48,9 +48,9 @@ function normalizeMessages(value: unknown): HermesChatMessage[] {
     }));
 }
 
-function buildFallbackAnswer(messages: HermesChatMessage[], context: Awaited<ReturnType<typeof getHermesDataContext>>) {
+function buildFallbackAnswer(messages: X7ChatMessage[], context: Awaited<ReturnType<typeof getX7DataContext>>) {
   const latestQuestion = messages.filter((message) => message.role === "user").at(-1)?.content ?? "";
-  const summary = summarizeHermesDataContext(context);
+  const summary = summarizeX7DataContext(context);
   const sourceList = summary.sourceNames.length > 0 ? summary.sourceNames.join(", ") : "ninguna fuente conectada todavía";
   const failingText = summary.failingRuns > 0 ? ` Detecté ${summary.failingRuns} ejecución(es) reciente(s) con error; conviene revisarlas antes de automatizar más.` : " No detecté errores recientes en las ejecuciones visibles.";
 
@@ -58,7 +58,7 @@ function buildFallbackAnswer(messages: HermesChatMessage[], context: Awaited<Ret
     `Estoy conectado al contexto configurado de Evox: ${summary.connectedSources} fuente(s) (${sourceList}), ${summary.totalAgents} agente(s) y ${summary.totalWorkflows} workflow(s).`,
     `Sobre tu consulta: “${latestQuestion.slice(0, 180)}${latestQuestion.length > 180 ? "…" : ""}”.`,
     `Lectura operativa: hay ${summary.activeAgents} agente(s) activo(s) y ${summary.activeWorkflows} workflow(s) activo(s).${failingText}`,
-    "Siguiente acción sugerida: conecta una integración adicional o crea un agente dedicado si quieres que Hermes vigile una métrica específica de negocio.",
+    "Siguiente acción sugerida: conecta una integración adicional o crea un agente dedicado si quieres que X7 vigile una métrica específica de negocio.",
   ].join("\n\n");
 }
 
@@ -75,7 +75,7 @@ function extractOpenAIText(body: OpenAIResponseBody) {
     .trim();
 }
 
-async function generateAIAnswer(messages: HermesChatMessage[], context: Awaited<ReturnType<typeof getHermesDataContext>>) {
+async function generateAIAnswer(messages: X7ChatMessage[], context: Awaited<ReturnType<typeof getX7DataContext>>) {
   const apiKey = process.env.OPENAI_API_KEY;
 
   if (!apiKey) {
@@ -89,9 +89,9 @@ async function generateAIAnswer(messages: HermesChatMessage[], context: Awaited<
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: process.env.HERMES_AI_MODEL ?? process.env.OPENAI_MODEL ?? "gpt-4.1-mini",
+      model: process.env.X7_AI_MODEL ?? process.env.OPENAI_MODEL ?? "gpt-4.1-mini",
       instructions: [
-        "Eres Hermes, el copiloto ejecutivo de Evox Business OS.",
+        "Eres X7, el copiloto ejecutivo de Evox Business OS.",
         "Responde en español, con tono claro, estratégico y accionable.",
         "Usa solamente el contexto de datos proporcionado por la plataforma y aclara cuando falte una integración o dato.",
         "No inventes métricas externas ni resultados de APIs que no estén en el contexto.",
@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "A user message is required" }, { status: 400 });
   }
 
-  const context = await getHermesDataContext(user.id);
+  const context = await getX7DataContext(user.id);
   const answer = await generateAIAnswer(messages, context);
 
   return NextResponse.json({
@@ -146,6 +146,6 @@ export async function POST(req: NextRequest) {
       createdAt: new Date().toISOString(),
     },
     sources: context,
-    summary: summarizeHermesDataContext(context),
+    summary: summarizeX7DataContext(context),
   });
 }

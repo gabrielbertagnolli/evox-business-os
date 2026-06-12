@@ -17,7 +17,7 @@ import {
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/agents", label: "Agents", icon: Bot },
-  { href: "/dashboard/hermes", label: "Hermes", icon: MessageCircle },
+  { href: "/dashboard/x7", label: "X7", icon: MessageCircle },
   { href: "/dashboard/skills", label: "Skills", icon: Zap },
   { href: "/dashboard/workflows", label: "Workflows", icon: GitBranch },
   { href: "/dashboard/integrations", label: "Integrations", icon: Plug },

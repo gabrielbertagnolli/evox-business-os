@@ -1,7 +1,7 @@
 import { PROVIDERS, type ProviderId } from "@/lib/integrations/config";
 import { createClient } from "@/lib/supabase/server";
 
-export interface HermesIntegrationSource {
+export interface X7IntegrationSource {
   id: string;
   provider: string;
   providerName: string;
@@ -12,7 +12,7 @@ export interface HermesIntegrationSource {
   connectedAt: string | null;
 }
 
-export interface HermesAgentSource {
+export interface X7AgentSource {
   id: string;
   name: string;
   description: string | null;
@@ -22,7 +22,7 @@ export interface HermesAgentSource {
   runCount: number;
 }
 
-export interface HermesWorkflowSource {
+export interface X7WorkflowSource {
   id: string;
   name: string;
   description: string | null;
@@ -31,7 +31,7 @@ export interface HermesWorkflowSource {
   runCount: number;
 }
 
-export interface HermesRunLogSource {
+export interface X7RunLogSource {
   id: string;
   sourceType: string;
   sourceName: string | null;
@@ -41,11 +41,11 @@ export interface HermesRunLogSource {
   startedAt: string;
 }
 
-export interface HermesDataContext {
-  integrations: HermesIntegrationSource[];
-  agents: HermesAgentSource[];
-  workflows: HermesWorkflowSource[];
-  recentRunLogs: HermesRunLogSource[];
+export interface X7DataContext {
+  integrations: X7IntegrationSource[];
+  agents: X7AgentSource[];
+  workflows: X7WorkflowSource[];
+  recentRunLogs: X7RunLogSource[];
   generatedAt: string;
 }
 
@@ -91,7 +91,7 @@ function getProviderConfig(provider: string) {
   return PROVIDERS[provider as ProviderId];
 }
 
-export async function getHermesDataContext(userId: string): Promise<HermesDataContext> {
+export async function getX7DataContext(userId: string): Promise<X7DataContext> {
   const supabase = await createClient();
 
   const [integrationsResult, agentsResult, workflowsResult, logsResult] = await Promise.all([
@@ -183,7 +183,7 @@ export async function getHermesDataContext(userId: string): Promise<HermesDataCo
   };
 }
 
-export function summarizeHermesDataContext(context: HermesDataContext) {
+export function summarizeX7DataContext(context: X7DataContext) {
   const activeAgents = context.agents.filter((agent) => agent.status === "active").length;
   const activeWorkflows = context.workflows.filter((workflow) => workflow.status === "active").length;
   const failingRuns = context.recentRunLogs.filter((log) => log.status === "error");
@@ -197,5 +197,7 @@ export function summarizeHermesDataContext(context: HermesDataContext) {
     totalWorkflows: context.workflows.length,
     failingRuns: failingRuns.length,
     latestRunStatus: context.recentRunLogs[0]?.status ?? null,
+    learnedSkills: 0,
+    memoryNodes: 0,
   };
 }
