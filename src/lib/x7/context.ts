@@ -41,11 +41,28 @@ export interface X7RunLogSource {
   startedAt: string;
 }
 
+export interface X7SkillSource {
+  id: string;
+  name: string;
+  description: string | null;
+  codePayload: string | null;
+  isActive: boolean;
+}
+
+export interface X7MemoryNodeSource {
+  id: string;
+  content: string;
+  type: string;
+  createdAt: string;
+}
+
 export interface X7DataContext {
   integrations: X7IntegrationSource[];
   agents: X7AgentSource[];
   workflows: X7WorkflowSource[];
   recentRunLogs: X7RunLogSource[];
+  skills: X7SkillSource[];
+  memoryNodes: X7MemoryNodeSource[];
   generatedAt: string;
 }
 
@@ -94,7 +111,7 @@ function getProviderConfig(provider: string) {
 export async function getX7DataContext(userId: string): Promise<X7DataContext> {
   const supabase = await createClient();
 
-  const [integrationsResult, agentsResult, workflowsResult, logsResult] = await Promise.all([
+  const [integrationsResult, agentsResult, workflowsResult, logsResult, skillsResult, memoryResult] = await Promise.all([
     supabase
       .from("integrations")
       .select("id, provider, provider_account_id, provider_account_name, scopes, connected_at")
@@ -118,6 +135,16 @@ export async function getX7DataContext(userId: string): Promise<X7DataContext> {
       .eq("user_id", userId)
       .order("started_at", { ascending: false })
       .limit(10),
+    supabase
+      .from("x7_skills")
+      .select("id, name, description, code_payload, is_active")
+      .eq("user_id", userId)
+      .eq("is_active", true),
+    supabase
+      .from("x7_memory_nodes")
+      .select("id, content, type, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false }),
   ]);
 
   if (integrationsResult.error) {
@@ -136,6 +163,13 @@ export async function getX7DataContext(userId: string): Promise<X7DataContext> {
     throw new Error(logsResult.error.message);
   }
 
+  if (skillsResult.error) {
+    throw new Error(skillsResult.error.message);
+  }
+
+  if (memoryResult.error) {
+    throw new Error(memoryResult.error.message);
+  }
   const integrations = ((integrationsResult.data ?? []) as IntegrationRecord[]).map((integration) => {
     const config = getProviderConfig(integration.provider);
 
@@ -179,6 +213,19 @@ export async function getX7DataContext(userId: string): Promise<X7DataContext> {
       error: log.error,
       startedAt: log.started_at,
     })),
+    skills: (skillsResult.data ?? []).map((skill: any) => ({
+      id: skill.id,
+      name: skill.name,
+      description: skill.description,
+      codePayload: skill.code_payload,
+      isActive: skill.is_active,
+    })),
+    memoryNodes: (memoryResult.data ?? []).map((node: any) => ({
+      id: node.id,
+      content: node.content,
+      type: node.type,
+      createdAt: node.created_at,
+    })),
     generatedAt: new Date().toISOString(),
   };
 }
@@ -197,7 +244,7 @@ export function summarizeX7DataContext(context: X7DataContext) {
     totalWorkflows: context.workflows.length,
     failingRuns: failingRuns.length,
     latestRunStatus: context.recentRunLogs[0]?.status ?? null,
-    learnedSkills: 0,
-    memoryNodes: 0,
+    learnedSkills: context.skills.length,
+    memoryNodes: context.memoryNodes.length,
   };
 }

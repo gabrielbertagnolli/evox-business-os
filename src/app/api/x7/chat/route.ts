@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getX7DataContext, summarizeX7DataContext } from "@/lib/x7/context";
 import { createClient } from "@/lib/supabase/server";
+import { formatSkillsAsTools, executeSkill } from "@/lib/x7/tools";
+import { compressTrajectory } from "@/lib/x7/compressor";
 
 interface X7ChatMessage {
   id?: string;
@@ -82,40 +84,99 @@ async function generateAIAnswer(messages: X7ChatMessage[], context: Awaited<Retu
     return buildFallbackAnswer(messages, context);
   }
 
-  const response = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: process.env.X7_AI_MODEL ?? process.env.OPENAI_MODEL ?? "gpt-4.1-mini",
-      instructions: [
-        "Eres X7, el copiloto ejecutivo de Evox Business OS.",
-        "Responde en español, con tono claro, estratégico y accionable.",
-        "Usa solamente el contexto de datos proporcionado por la plataforma y aclara cuando falte una integración o dato.",
-        "No inventes métricas externas ni resultados de APIs que no estén en el contexto.",
-      ].join(" "),
-      input: [
-        {
-          role: "system",
-          content: `Contexto de fuentes configuradas en Evox:\n${JSON.stringify(context, null, 2)}`,
-        },
-        ...messages.map((message) => ({
-          role: message.role,
-          content: message.content,
-        })),
-      ],
-    }),
-  });
+  const tools = formatSkillsAsTools(context.skills);
+  
+  const systemPrompt = [
+    "Eres X7, el copiloto ejecutivo de Evox Business OS.",
+    "Responde en español, con tono claro, estratégico y accionable.",
+    "Usa solamente el contexto de datos proporcionado por la plataforma.",
+    "Si tienes herramientas (skills) disponibles, úsalas cuando el usuario pida acciones que correspondan a ellas.",
+    `Contexto de fuentes y memoria a largo plazo:\n${JSON.stringify({ 
+      integrations: context.integrations, 
+      agents: context.agents,
+      memoryNodes: context.memoryNodes // Inyectar memoria a largo plazo al contexto
+    }, null, 2)}`
+  ].join(" ");
 
-  const body = (await response.json()) as OpenAIResponseBody;
+  const openAiMessages: any[] = [
+    { role: "system", content: systemPrompt },
+    ...messages.map(m => ({ role: m.role, content: m.content }))
+  ];
 
-  if (!response.ok) {
-    throw new Error(body.error?.message ?? "OpenAI request failed");
+  let finalAnswer = "";
+  let loopCount = 0;
+  const MAX_LOOPS = 5; // Evitar bucles infinitos en Serverless
+
+  while (loopCount < MAX_LOOPS) {
+    loopCount++;
+    
+    const requestBody: any = {
+      model: process.env.X7_AI_MODEL ?? process.env.OPENAI_MODEL ?? "gpt-4o-mini",
+      messages: openAiMessages,
+    };
+
+    if (tools.length > 0) {
+      requestBody.tools = tools;
+      requestBody.tool_choice = "auto";
+    }
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    const body = await response.json();
+
+    if (!response.ok) {
+      console.error("OpenAI Error:", body);
+      return buildFallbackAnswer(messages, context);
+    }
+
+    const responseMessage = body.choices?.[0]?.message;
+    if (!responseMessage) break;
+
+    openAiMessages.push(responseMessage);
+
+    // Si el modelo decide ejecutar una herramienta (Skill)
+    if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
+      for (const toolCall of responseMessage.tool_calls) {
+        const skillName = toolCall.function.name;
+        const skillId = skillName.replace("skill_", "").replace(/_/g, "-");
+        
+        const skillToRun = context.skills.find(s => s.id === skillId);
+        let toolResult = "Skill not found or inactive";
+        
+        if (skillToRun) {
+          try {
+            const args = JSON.parse(toolCall.function.arguments || "{}");
+            toolResult = await executeSkill(skillToRun, args);
+          } catch (e: any) {
+            toolResult = `Error parsing arguments: ${e.message}`;
+          }
+        }
+
+        // Agregar el resultado de la herramienta al historial
+        openAiMessages.push({
+          role: "tool",
+          tool_call_id: toolCall.id,
+          name: skillName,
+          content: toolResult
+        });
+      }
+      // Continuar el bucle para que el modelo lea el resultado de la herramienta
+      continue;
+    }
+
+    // Si no hay más tool_calls, tenemos nuestra respuesta final
+    finalAnswer = responseMessage.content;
+    break;
   }
 
-  return extractOpenAIText(body) || buildFallbackAnswer(messages, context);
+  return finalAnswer || buildFallbackAnswer(messages, context);
 }
 
 export async function POST(req: NextRequest) {
@@ -137,6 +198,9 @@ export async function POST(req: NextRequest) {
 
   const context = await getX7DataContext(user.id);
   const answer = await generateAIAnswer(messages, context);
+
+  // Intentar comprimir la trayectoria asíncronamente
+  compressTrajectory(user.id, messages).catch(console.error);
 
   return NextResponse.json({
     message: {
