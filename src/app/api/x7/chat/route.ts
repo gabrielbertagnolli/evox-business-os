@@ -89,8 +89,23 @@ async function generateAIAnswer(userId: string, messages: X7ChatMessage[], conte
   const modelName = settings?.active_model || process.env.X7_AI_MODEL || "gpt-4o-mini";
   
   let apiKey = process.env.OPENAI_API_KEY;
+  let customBaseUrl: string | null = null;
+
   if (provider === "openai" && settings?.openai_api_key) apiKey = settings.openai_api_key;
-  if (provider === "anthropic") apiKey = settings?.anthropic_api_key || process.env.ANTHROPIC_API_KEY;
+  else if (provider === "anthropic") apiKey = settings?.anthropic_api_key || process.env.ANTHROPIC_API_KEY;
+  else if (provider !== "openai" && provider !== "anthropic") {
+    // Es un custom provider UUID
+    const { data: customProvider } = await supabase
+      .from("x7_llm_providers")
+      .select("*")
+      .eq("id", provider)
+      .single();
+    
+    if (customProvider) {
+      customBaseUrl = customProvider.base_url;
+      apiKey = customProvider.api_key || "";
+    }
+  }
 
   if (!apiKey) {
     return buildFallbackAnswer(messages, context);
@@ -134,17 +149,17 @@ async function generateAIAnswer(userId: string, messages: X7ChatMessage[], conte
 
     // Multi-LLM Routing
     let endpoint = "https://api.openai.com/v1/chat/completions";
+    
+    if (customBaseUrl) {
+      endpoint = `${customBaseUrl.replace(/\/$/, "")}/chat/completions`;
+    }
+
     let headers: any = {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     };
 
     if (provider === "anthropic") {
-      // Basic translation layer for Anthropic API
-      // Nota: Tool calling en Anthropic es más complejo. Para el MVP usamos la compatibilidad de OpenAI si existe, o enviamos mensaje estándar.
-      // Aquí haríamos el mapeo real hacia api.anthropic.com/v1/messages
-      // Por brevedad, si eligen anthropic y no usamos el SDK unificado, caerá en un proxy o error si no maneja bien los formats.
-      // Recomendar a futuro instalar @ai-sdk/anthropic.
       endpoint = "https://api.anthropic.com/v1/messages";
       headers = {
         "x-api-key": apiKey,
@@ -155,7 +170,7 @@ async function generateAIAnswer(userId: string, messages: X7ChatMessage[], conte
       requestBody.system = systemPrompt;
       requestBody.messages = messages.map(m => ({ role: m.role, content: m.content }));
       requestBody.max_tokens = 4000;
-      delete requestBody.tools; // Para simplificar este bypass
+      delete requestBody.tools;
       delete requestBody.tool_choice;
     }
 
