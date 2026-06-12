@@ -1,6 +1,6 @@
 -- Seed massive cloud-safe tools (Parity with Hermes capabilities)
 
-DO $$
+DO $BODY$
 DECLARE
     user_rec RECORD;
 BEGIN
@@ -105,4 +105,4 @@ BEGIN
 
     END LOOP;
 END;
-$$;
+$BODY$;
