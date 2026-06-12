@@ -171,7 +171,7 @@ export async function GET(req: NextRequest) {
 
   if (dbError) {
     console.error("DB upsert failed", dbError);
-    return NextResponse.redirect(`${redirectBase}?error=db_error`);
+    return NextResponse.redirect(`${redirectBase}?error=db_error&details=${encodeURIComponent(dbError.message)}`);
   }
 
   return NextResponse.redirect(`${redirectBase}?connected=${provider}`);

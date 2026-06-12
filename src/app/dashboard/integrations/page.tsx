@@ -89,7 +89,7 @@ function IntegrationsContent() {
       const messages: Record<string, string> = {
         provider_not_configured: "This provider is not configured yet. Add the OAuth credentials to your environment.",
         token_exchange_failed: "Failed to exchange OAuth token. Please try again.",
-        db_error: "Database error. Please try again.",
+        db_error: `Database error: ${searchParams.get("details") || "Please try again."}`,
         missing_params: "OAuth callback missing required parameters.",
         invalid_state: "OAuth state mismatch. Please try again.",
       };
