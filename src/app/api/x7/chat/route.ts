@@ -111,6 +111,42 @@ async function generateAIAnswer(userId: string, messages: X7ChatMessage[], conte
     return buildFallbackAnswer(messages, context);
   }
 
+  // --- RAG (Retrieval-Augmented Generation) ---
+  const lastUserMessage = messages.slice().reverse().find((m: any) => m.role === "user")?.content;
+  let ragContext = "";
+  
+  if (lastUserMessage) {
+    try {
+      let embedEndpoint = "https://api.openai.com/v1/embeddings";
+      if (customBaseUrl) {
+        embedEndpoint = `${customBaseUrl.replace(/\/$/, "")}/embeddings`;
+      }
+      
+      const embedRes = await fetch(embedEndpoint, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ input: lastUserMessage, model: "text-embedding-3-small" })
+      });
+      
+      if (embedRes.ok) {
+        const embedData = await embedRes.json();
+        const queryEmbedding = embedData.data[0].embedding;
+        
+        const { data: chunks } = await supabase.rpc("match_x7_document_chunks", {
+          query_embedding: queryEmbedding,
+          match_threshold: 0.5,
+          match_count: 5
+        });
+        
+        if (chunks && chunks.length > 0) {
+          ragContext = `\n\n--- RELEVANT KNOWLEDGE BASE DOCUMENTS ---\n` + chunks.map((c: any) => `Document ID: ${c.file_id}\nContent: ${c.content}`).join("\n\n") + `\n-----------------------------------------\nUse the above documents to answer the user's question if relevant.`;
+        }
+      }
+    } catch (err) {
+      console.error("RAG Error:", err);
+    }
+  }
+
   const tools = formatSkillsAsTools(context.skills);
   
   const systemPrompt = [
@@ -122,7 +158,8 @@ async function generateAIAnswer(userId: string, messages: X7ChatMessage[], conte
       integrations: context.integrations, 
       agents: context.agents,
       memoryNodes: context.memoryNodes // Inyectar memoria a largo plazo al contexto
-    }, null, 2)}`
+    }, null, 2)}`,
+    ragContext
   ].join(" ");
 
   const openAiMessages: any[] = [
