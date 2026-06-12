@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 
     if (dbError) {
       console.error("DB upsert failed", dbError);
-      return NextResponse.json({ error: "Failed to save integration" }, { status: 500 });
+      return NextResponse.json({ error: "Failed to save integration", details: dbError }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, provider });
