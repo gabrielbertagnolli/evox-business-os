@@ -415,7 +415,7 @@ Thumbs.db
 *.mng
 *.mts
 *.m2ts
-*.ts
+# *.ts
 *.mov
 *.qt
 *.dv

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Plug, CheckCircle2, X, AlertCircle, Loader2, ExternalLink } from "lucide-react";
+import { Plug, CheckCircle2, X, AlertCircle, Loader2, ExternalLink, Key } from "lucide-react";
 import { PROVIDERS, INTEGRATION_CATEGORIES, type ProviderId } from "@/lib/integrations/config";
 
 interface Integration {
@@ -48,6 +48,12 @@ function IntegrationsContent() {
   const [loading, setLoading] = useState(true);
   const [disconnecting, setDisconnecting] = useState<string | null>(null);
   const [toast, setToast] = useState<{ kind: "success" | "error"; message: string } | null>(null);
+  
+  // Manual Token Modal State
+  const [manualProvider, setManualProvider] = useState<ProviderId | null>(null);
+  const [manualToken, setManualToken] = useState("");
+  const [manualAccountName, setManualAccountName] = useState("");
+  const [isSubmittingManual, setIsSubmittingManual] = useState(false);
 
   const showToast = (kind: "success" | "error", message: string) => {
     setToast({ kind, message });
@@ -112,7 +118,45 @@ function IntegrationsContent() {
   }
 
   function handleConnect(provider: ProviderId) {
-    window.location.href = `/api/integrations/connect?provider=${provider}`;
+    if (provider === "notion") {
+      // For Notion, we can offer manual internal token entry
+      setManualProvider("notion");
+    } else {
+      window.location.href = `/api/integrations/connect?provider=${provider}`;
+    }
+  }
+
+  async function handleManualSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!manualProvider || !manualToken.trim()) return;
+
+    setIsSubmittingManual(true);
+    try {
+      const res = await fetch("/api/integrations/manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: manualProvider,
+          token: manualToken.trim(),
+          accountName: manualAccountName.trim() || undefined,
+        }),
+      });
+
+      if (res.ok) {
+        showToast("success", `${PROVIDERS[manualProvider].name} connected via internal token.`);
+        setManualProvider(null);
+        setManualToken("");
+        setManualAccountName("");
+        fetchIntegrations();
+      } else {
+        const error = await res.json();
+        showToast("error", error.error || "Failed to save internal token.");
+      }
+    } catch (err) {
+      showToast("error", "An error occurred.");
+    } finally {
+      setIsSubmittingManual(false);
+    }
   }
 
   return (
@@ -133,6 +177,85 @@ function IntegrationsContent() {
             <AlertCircle size={14} className="text-red-400 shrink-0" />
           )}
           <span className="text-sm text-white/80">{toast.message}</span>
+        </div>
+      )}
+
+      {/* Manual Token Modal */}
+      {manualProvider && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0A0A0A] p-6 shadow-2xl">
+            <h3 className="mb-1 text-lg font-semibold text-white">
+              Connect {PROVIDERS[manualProvider].name}
+            </h3>
+            <p className="mb-6 text-sm text-white/40">
+              {manualProvider === "notion" 
+                ? "If you're using an Internal Integration, paste your Internal Integration Secret below. If you have a Public Integration configured, you can use the standard OAuth flow."
+                : "Enter your API key or token to connect this integration manually."}
+            </p>
+            
+            <form onSubmit={handleManualSubmit} className="space-y-4">
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-white/60">
+                  Account Name / Workspace (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={manualAccountName}
+                  onChange={(e) => setManualAccountName(e.target.value)}
+                  placeholder="e.g. Acme Corp Workspace"
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/20 outline-none transition focus:border-white/30"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-white/60">
+                  Internal Integration Token
+                </label>
+                <input
+                  type="password"
+                  value={manualToken}
+                  onChange={(e) => setManualToken(e.target.value)}
+                  placeholder="secret_..."
+                  required
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/20 outline-none transition focus:border-white/30"
+                />
+              </div>
+              
+              <div className="mt-6 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setManualProvider(null);
+                    setManualToken("");
+                    setManualAccountName("");
+                  }}
+                  className="flex-1 rounded-lg border border-white/10 bg-transparent px-4 py-2 text-sm font-medium text-white/70 transition hover:bg-white/5"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingManual || !manualToken.trim()}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-black transition hover:bg-white/90 disabled:opacity-50"
+                >
+                  {isSubmittingManual ? <Loader2 size={16} className="animate-spin" /> : <Key size={16} />}
+                  Connect
+                </button>
+              </div>
+            </form>
+            
+            {manualProvider === "notion" && (
+              <div className="mt-4 border-t border-white/5 pt-4">
+                <button
+                  type="button"
+                  onClick={() => window.location.href = `/api/integrations/connect?provider=${manualProvider}`}
+                  className="w-full rounded-lg py-2 text-xs font-medium text-white/40 transition hover:text-white/80 flex items-center justify-center gap-1.5"
+                >
+                  <ExternalLink size={12} />
+                  Or use Public OAuth flow instead
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
