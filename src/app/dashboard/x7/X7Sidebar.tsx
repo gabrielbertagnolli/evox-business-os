@@ -41,6 +41,9 @@ export default function X7Sidebar() {
           <Link href="/dashboard/x7/notes" className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors ${pathname.startsWith("/dashboard/x7/notes") ? "bg-white/10 text-white font-medium" : "text-white/60 hover:bg-white/5 hover:text-white"}`}>
             <Folder size={16} /> Workspace de Notas
           </Link>
+          <Link href="/dashboard/x7/admin" className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors ${pathname.startsWith("/dashboard/x7/admin") ? "bg-white/10 text-white font-medium" : "text-white/60 hover:bg-white/5 hover:text-white"}`}>
+            <ShieldCheck size={16} /> Admin & Analytics
+          </Link>
         </div>
 
         <div className="mb-2 px-3 text-xs font-semibold tracking-wider text-white/30 uppercase">
