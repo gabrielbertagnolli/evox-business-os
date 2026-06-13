@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Plus, Edit2, Trash2, FileText, Pin, Check, X, Save } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-
+import { MarkdownRenderer } from "../components/MarkdownRenderer";
 export default function NotesWorkspacePage() {
   const queryClient = useQueryClient();
   const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
@@ -186,10 +186,11 @@ export default function NotesWorkspacePage() {
                 />
               ) : (
                 <div className="prose prose-invert prose-emerald max-w-none">
-                  {/* For full implementation, we would use a markdown renderer like react-markdown here */}
-                  <div className="whitespace-pre-wrap text-white/80 leading-relaxed">
-                    {activeNote?.content || "No hay contenido."}
-                  </div>
+                  {activeNote?.content ? (
+                    <MarkdownRenderer content={activeNote.content} />
+                  ) : (
+                    <div className="text-white/40 italic">No hay contenido.</div>
+                  )}
                 </div>
               )}
             </div>

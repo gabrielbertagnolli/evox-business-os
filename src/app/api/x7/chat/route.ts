@@ -178,6 +178,21 @@ async function generateAIAnswer(userId: string, messages: X7ChatMessage[], conte
     }, null, 2)}`,
     ragContext
   ].join(" ");
+  // Inject native read_url tool (Hermes Extractor)
+  tools.push({
+    type: "function",
+    function: {
+      name: "read_url",
+      description: "Extrae y lee el contenido de una URL web específica y lo devuelve en formato Markdown. Útil para leer documentación, artículos o repositorios.",
+      parameters: {
+        type: "object",
+        properties: {
+          url: { type: "string", description: "La URL completa (http/https) a leer." }
+        },
+        required: ["url"]
+      }
+    }
+  });
 
   if (webSearch) {
     systemPrompt += "\n\n[INSTRUCCIÓN CRÍTICA]: El usuario activó explícitamente la búsqueda web. DEBES usar la herramienta 'web_search' ahora mismo antes de darle tu respuesta final.";
@@ -288,6 +303,14 @@ async function generateAIAnswer(userId: string, messages: X7ChatMessage[], conte
             toolResult = (await res.text()).substring(0, 8000);
           } catch (e: any) {
             toolResult = `Error en la búsqueda web: ${e.message}`;
+          }
+        } else if (skillName === "read_url") {
+          try {
+            const args = JSON.parse(toolCall.function.arguments || "{}");
+            const res = await fetch(`https://r.jina.ai/${encodeURIComponent(args.url)}`);
+            toolResult = (await res.text()).substring(0, 8000); // Limit to 8k chars to prevent context overflow
+          } catch (e: any) {
+            toolResult = `Error al leer la URL: ${e.message}`;
           }
         } else if (skillToRun) {
           try {

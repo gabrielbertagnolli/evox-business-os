@@ -8,40 +8,78 @@ interface MarkdownRendererProps {
   content: string;
 }
 
+function CodeBlock({ node, inline, className, children, ...props }: any) {
+  const match = /language-(\w+)/.exec(className || "");
+  const [isPreview, setIsPreview] = React.useState(false);
+  
+  if (inline || !match) {
+    return (
+      <code {...props} className="bg-white/10 px-1.5 py-0.5 rounded-md text-[#2d7bff] font-mono text-[0.9em]">
+        {children}
+      </code>
+    );
+  }
+
+  const language = match[1];
+  const isWebLanguage = language === "html" || language === "svg" || language === "javascript" || language === "jsx" || language === "tsx" || language === "react";
+  const rawCode = String(children).replace(/\n$/, "");
+
+  return (
+    <div className="relative mt-2 mb-4 rounded-md overflow-hidden text-sm border border-white/10 flex flex-col">
+      <div className="flex items-center justify-between px-4 py-1.5 bg-[#1a1b20] border-b border-white/5">
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-mono text-white/50 lowercase">{language}</span>
+          {isWebLanguage && (
+            <button
+              onClick={() => setIsPreview(!isPreview)}
+              className={`text-xs px-2 py-0.5 rounded-full transition-colors ${isPreview ? 'bg-[#2d7bff] text-white' : 'bg-white/10 text-white/60 hover:text-white hover:bg-white/20'}`}
+            >
+              {isPreview ? 'Código' : '👁️ Preview'}
+            </button>
+          )}
+        </div>
+        <button 
+          onClick={() => navigator.clipboard.writeText(rawCode)}
+          className="text-xs text-white/40 hover:text-white transition-colors"
+        >
+          Copiar
+        </button>
+      </div>
+      
+      {isPreview ? (
+        <div className="bg-white w-full overflow-hidden p-4 min-h-[300px] flex">
+          {language === "svg" ? (
+            <div className="w-full flex justify-center items-center" dangerouslySetInnerHTML={{ __html: rawCode }} />
+          ) : (
+            <iframe
+              srcDoc={rawCode}
+              sandbox="allow-scripts allow-modals"
+              className="w-full min-h-[300px] border-none flex-1"
+              title="Artifact Preview"
+            />
+          )}
+        </div>
+      ) : (
+        <SyntaxHighlighter
+          {...props}
+          style={vscDarkPlus as any}
+          language={language}
+          PreTag="div"
+          customStyle={{ margin: 0, background: "#0a0b0e", padding: "1rem" }}
+        >
+          {rawCode}
+        </SyntaxHighlighter>
+      )}
+    </div>
+  );
+}
+
 export function MarkdownRenderer({ content }: MarkdownRendererProps) {
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
       components={{
-        code({ node, inline, className, children, ...props }: any) {
-          const match = /language-(\w+)/.exec(className || "");
-          return !inline && match ? (
-            <div className="relative mt-2 mb-4 rounded-md overflow-hidden text-sm border border-white/10">
-              <div className="flex items-center justify-between px-4 py-1.5 bg-[#1a1b20] border-b border-white/5">
-                <span className="text-xs font-mono text-white/50 lowercase">{match[1]}</span>
-                <button 
-                  onClick={() => navigator.clipboard.writeText(String(children).replace(/\n$/, ""))}
-                  className="text-xs text-white/40 hover:text-white transition-colors"
-                >
-                  Copiar
-                </button>
-              </div>
-              <SyntaxHighlighter
-                {...props}
-                style={vscDarkPlus as any}
-                language={match[1]}
-                PreTag="div"
-                customStyle={{ margin: 0, background: "#0a0b0e", padding: "1rem" }}
-              >
-                {String(children).replace(/\n$/, "")}
-              </SyntaxHighlighter>
-            </div>
-          ) : (
-            <code {...props} className="bg-white/10 px-1.5 py-0.5 rounded-md text-[#2d7bff] font-mono text-[0.9em]">
-              {children}
-            </code>
-          );
-        },
+        code: CodeBlock,
         p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
         ul: ({ children }) => <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>,
         ol: ({ children }) => <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>,
