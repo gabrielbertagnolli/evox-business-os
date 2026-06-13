@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 // @ts-ignore
-import pdf from "pdf-parse";
+import * as pdfParse from "pdf-parse";
+const pdf = (pdfParse as any).default || pdfParse;
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
