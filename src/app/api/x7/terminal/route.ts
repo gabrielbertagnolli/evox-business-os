@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/dist/server/web/spec-extension/request";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(req: NextRequest) {
@@ -16,37 +16,59 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing code or language" }, { status: 400 });
     }
 
-    if (language === "javascript" || language === "js") {
-      try {
-        const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
-        const fn = new AsyncFunction(code);
-        const result = await fn();
-        return NextResponse.json({ 
-          output: result !== undefined ? String(result) : "Execution completed with no return value.",
-          status: "success"
-        });
-      } catch (err: any) {
-        return NextResponse.json({ 
-          output: `Error: ${err.message}`,
-          status: "error"
-        });
-      }
-    } else if (language === "python" || language === "py") {
-      // E2B or Python sandbox placeholder
-      if (process.env.E2B_API_KEY) {
-        return NextResponse.json({ 
-          output: "[E2B SDK Required] Please install @e2b/code-interpreter to execute Python in production.",
-          status: "warning"
-        });
-      } else {
-        return NextResponse.json({ 
-          output: `[Sandbox] Python execution requires E2B_API_KEY. \nCode intercepted: \n${code.substring(0, 50)}...`,
-          status: "warning"
-        });
-      }
+    // Piston Language Mapping
+    const langMap: Record<string, string> = { 
+      "python": "python", 
+      "javascript": "node", 
+      "js": "node",
+      "bash": "bash" 
+    };
+    
+    const versionMap: Record<string, string> = { 
+      "python": "3.10.0", 
+      "javascript": "18.15.0", 
+      "js": "18.15.0",
+      "bash": "5.2.0" 
+    };
+    
+    const runtime = langMap[language] || "python";
+    const version = versionMap[language] || "3.10.0";
+    
+    const response = await fetch("https://emkc.org/api/v2/piston/execute", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        language: runtime,
+        version: version,
+        files: [
+          {
+            name: "main",
+            content: code
+          }
+        ],
+        compile_timeout: 10000,
+        run_timeout: 3000,
+        compile_memory_limit: -1,
+        run_memory_limit: -1
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.message) {
+      return NextResponse.json({ error: "Error de la API Piston: " + data.message }, { status: 500 });
     }
-
-    return NextResponse.json({ error: "Unsupported language" }, { status: 400 });
+    
+    let output = "";
+    if (data.compile && data.compile.output) output += "Compile Output:\n" + data.compile.output + "\n";
+    if (data.run && data.run.output) output += data.run.output;
+    
+    return NextResponse.json({ 
+      output: output || "(Sin salida)",
+      status: data.run?.code === 0 ? "success" : "error"
+    });
 
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

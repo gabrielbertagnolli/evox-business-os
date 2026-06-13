@@ -48,9 +48,7 @@ export function formatSkillsAsTools(skills: X7SkillSource[]): X7ToolDefinition[]
 }
 
 /**
- * Ejecuta una habilidad dinámicamente usando `Function` de JS de forma segura (limitada).
- * Nota: En un entorno Serverless Edge completo, evaluar JS arbitrario es peligroso.
- * Aquí lo simplificamos envolviendo la función.
+ * Ejecuta una habilidad dinámicamente usando la API segura de Piston (Sandbox aislada).
  */
 export async function executeSkill(skill: X7SkillSource, args: any): Promise<string> {
   try {
@@ -62,17 +60,37 @@ export async function executeSkill(skill: X7SkillSource, args: any): Promise<str
       if (parsed.code) script = parsed.code;
     } catch (e) {}
 
-    // Evaluar la función en un wrapper (Nota de arquitectura: esto requiere Node.js runtime, no Edge)
-    const runSkill = new Function("args", `
-      return (async function() {
+    // Inyectar argumentos en el script de manera segura para el runtime
+    const injectedCode = `
+      const args = ${JSON.stringify(args)};
+      async function main() {
         ${script}
-      })();
-    `);
+      }
+      main().then(res => console.log(JSON.stringify(res))).catch(err => console.error(err));
+    `;
 
-    const result = await runSkill(args);
-    return JSON.stringify(result);
+    // Ejecución segura en sandbox remoto (Piston API)
+    const response = await fetch("https://emkc.org/api/v2/piston/execute", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        language: "node",
+        version: "18.15.0",
+        files: [{ name: "main.js", content: injectedCode }],
+        compile_timeout: 10000,
+        run_timeout: 3000
+      })
+    });
+
+    const data = await response.json();
+    if (data.message) throw new Error(data.message);
+
+    let output = "";
+    if (data.run && data.run.output) output = data.run.output.trim();
+    
+    return output || "Ejecución completada sin salida.";
   } catch (error: any) {
     console.error(`Skill execution failed (${skill.name}):`, error);
-    return `Error ejecutando la habilidad: ${error.message}`;
+    return `Error ejecutando la habilidad en el sandbox: ${error.message}`;
   }
 }

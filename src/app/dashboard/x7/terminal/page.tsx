@@ -96,7 +96,7 @@ export default function TerminalPage() {
               handleExecute();
             }
           }}
-          placeholder={`// Escribe tu código en ${language === 'javascript' ? 'Javascript (usa return para ver salida)' : 'Python'}...\n// Presiona Ctrl + Enter para ejecutar`}
+          placeholder={`// Escribe tu código en ${language}...\n// Presiona Ctrl + Enter para ejecutar (usa console.log o print para ver la salida)`}
           className="w-full h-32 bg-transparent text-gray-200 outline-none resize-none font-mono text-sm placeholder:text-gray-600"
           spellCheck={false}
         />
