@@ -125,7 +125,14 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
 
   const [webSearchEnabled, setWebSearchEnabled] = useState(false);
   const [selectedModel, setSelectedModel] = useState("openai");
+  const [secondaryModel, setSecondaryModel] = useState<string | null>(null);
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+  const [isSecondaryDropdownOpen, setIsSecondaryDropdownOpen] = useState(false);
+  const [attachedFile, setAttachedFile] = useState<{ name: string, content: string } | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  
+  // For dual model chat, we need a way to group messages or just send to both
+  const [secondaryMessages, setSecondaryMessages] = useState<X7Message[]>([]);
 
   const { data: providers } = useQuery({
     queryKey: ["x7-providers"],
@@ -146,8 +153,10 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
           createdAt: m.created_at
         }));
       setMessages(sortedMessages);
+      setSecondaryMessages(sortedMessages); // Seed secondary with history as well
     } else if (!chatId) {
       setMessages([INITIAL_MESSAGE]);
+      setSecondaryMessages([INITIAL_MESSAGE]);
     }
   }, [chatDetail, chatId]);
 
@@ -155,29 +164,58 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
   const canSubmit = input.trim().length > 0 && !chatMutation.isPending;
 
   async function submitPrompt(prompt: string, parentId?: string) {
+    // Append attached file content to prompt if exists
+    let finalPrompt = prompt.trim();
+    if (attachedFile) {
+      finalPrompt += `\n\n[ARCHIVO ADJUNTO: ${attachedFile.name}]\n${attachedFile.content}\n[/ARCHIVO]`;
+    }
+
     const userMessage: X7Message = {
       id: crypto.randomUUID(),
       role: "user",
-      content: prompt.trim(),
+      content: finalPrompt,
       createdAt: new Date().toISOString(),
     };
     
     const effectiveParentId = parentId || (messages.length > 1 ? messages[messages.length - 1].id : undefined);
     const nextMessages = [...messages, userMessage];
+    const nextSecondaryMessages = [...secondaryMessages, userMessage];
+    
     setMessages(nextMessages);
+    if (secondaryModel) setSecondaryMessages(nextSecondaryMessages);
     setInput("");
+    setAttachedFile(null);
 
     try {
-      const response = await chatMutation.mutateAsync({
+      // Primary model request
+      const primaryRequest = chatMutation.mutateAsync({
         messages: nextMessages,
         chatId: chatId,
         parentId: effectiveParentId !== "x7-welcome" ? effectiveParentId : undefined,
         webSearch: webSearchEnabled,
         model: selectedModel
       });
+
+      // Secondary model request if enabled
+      let secondaryRequest = null;
+      if (secondaryModel) {
+        secondaryRequest = chatMutation.mutateAsync({
+          messages: nextSecondaryMessages,
+          chatId: chatId,
+          parentId: effectiveParentId !== "x7-welcome" ? effectiveParentId : undefined,
+          webSearch: webSearchEnabled,
+          model: secondaryModel
+        });
+      }
+
+      const [response, secondaryResponse] = await Promise.all([primaryRequest, secondaryRequest]);
       
       setMessages((currentMessages) => [...currentMessages, response.message]);
       setSummary(response.summary);
+      
+      if (secondaryResponse) {
+        setSecondaryMessages((currentMessages) => [...currentMessages, secondaryResponse.message]);
+      }
 
       if (!chatId && response.chat_id) {
         queryClient.invalidateQueries({ queryKey: ["x7-chats"] });
@@ -185,6 +223,9 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
       }
     } catch {
       setMessages((currentMessages) => currentMessages.filter((message) => message.id !== userMessage.id));
+      if (secondaryModel) {
+        setSecondaryMessages((currentMessages) => currentMessages.filter((message) => message.id !== userMessage.id));
+      }
     }
   }
 
@@ -232,8 +273,7 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
                 <Bot size={13} className="text-[#2d7bff]" /> X7 AI
               </p>
               
-              {/* Dropdown Selector de Modelos */}
-              <div className="relative mt-1">
+              <div className="relative mt-1 flex items-center gap-4">
                 <button 
                   onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
                   className="flex items-center gap-2 text-xl font-semibold text-white hover:text-white/80 transition-colors"
@@ -248,13 +288,44 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
                       <button
                         key={p.id}
                         onClick={() => { setSelectedModel(p.id); setIsModelDropdownOpen(false); }}
-                        className={`w-full text-left px-4 py-2 text-sm transition-colors ${selectedModel === p.id ? 'bg-[#2d7bff]/20 text-[#2d7bff]' : 'text-white/70 hover:bg-white/5 hover:text-white'}`}
+                        className={`w-full text-left px-4 py-2 text-sm hover:bg-white/5 transition-colors ${selectedModel === p.id ? "text-[#2d7bff]" : "text-white/80"}`}
                       >
                         {p.name}
                       </button>
                     ))}
                   </div>
                 )}
+
+                <div className="relative flex items-center gap-2">
+                  <span className="text-white/20">vs</span>
+                  <button 
+                    onClick={() => setIsSecondaryDropdownOpen(!isSecondaryDropdownOpen)}
+                    className={`flex items-center gap-2 text-sm font-medium transition-colors ${secondaryModel ? "text-white" : "text-white/30 hover:text-white/60"}`}
+                  >
+                    {secondaryModel ? providers?.find((p: any) => p.id === secondaryModel)?.name : "Añadir Modelo"}
+                    <ChevronDown size={14} className="text-white/50" />
+                  </button>
+                  
+                  {secondaryModel && (
+                    <button onClick={() => setSecondaryModel(null)} className="text-white/30 hover:text-red-400">
+                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+                    </button>
+                  )}
+
+                  {isSecondaryDropdownOpen && (
+                    <div className="absolute top-full left-4 mt-2 w-48 rounded-xl bg-[#14151a] border border-white/10 shadow-2xl z-20 py-1">
+                      {providers?.map((p: any) => (
+                        <button
+                          key={p.id}
+                          onClick={() => { setSecondaryModel(p.id); setIsSecondaryDropdownOpen(false); }}
+                          className={`w-full text-left px-4 py-2 text-sm hover:bg-white/5 transition-colors ${secondaryModel === p.id ? "text-[#2d7bff]" : "text-white/80"}`}
+                        >
+                          {p.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             
@@ -264,25 +335,47 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
           </div>
         </div>
 
-        <div className="flex-1 space-y-4 overflow-y-auto px-6 py-6 scroll-smooth">
-          {messages.map((message) => (
-            <MessageBubble 
-              key={message.id} 
-              message={message} 
-              onRegenerate={() => handleRegenerate(message.id)}
-              onFeedback={(rating) => handleFeedback(message.id, rating)}
-            />
-          ))}
-          {chatMutation.isPending && (
-            <div className="flex justify-start">
-              <div className="flex items-center gap-2 rounded-2xl px-4 py-3 text-sm text-white/45" style={{ background: "rgba(255,255,255,0.045)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                <Loader2 size={14} className="animate-spin text-[#2d7bff]" /> X7 está procesando tu solicitud…
+        <div className={`flex-1 overflow-y-auto px-6 py-6 scroll-smooth ${secondaryModel ? "flex gap-6" : ""}`}>
+          {/* Primary Model Chat Stream */}
+          <div className={`space-y-4 ${secondaryModel ? "w-1/2 border-r border-white/5 pr-6" : ""}`}>
+            {messages.map((message) => (
+              <MessageBubble 
+                key={`primary-${message.id}`} 
+                message={message} 
+                onRegenerate={() => handleRegenerate(message.id)}
+                onFeedback={(rating) => handleFeedback(message.id, rating)}
+              />
+            ))}
+            {chatMutation.isPending && (
+              <div className="flex justify-start">
+                <div className="flex items-center gap-2 rounded-2xl px-4 py-3 text-sm text-white/45" style={{ background: "rgba(255,255,255,0.045)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <Loader2 size={14} className="animate-spin text-[#2d7bff]" /> {currentProviderName} está procesando...
+                </div>
               </div>
-            </div>
-          )}
-          {chatMutation.isError && (
-            <div className="rounded-2xl px-4 py-3 text-sm text-red-300" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.18)" }}>
-              {chatMutation.error instanceof Error ? chatMutation.error.message : "No se pudo contactar a X7."}
+            )}
+            {chatMutation.isError && (
+              <div className="rounded-2xl px-4 py-3 text-sm text-red-300" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.18)" }}>
+                {chatMutation.error instanceof Error ? chatMutation.error.message : "Error contactando al modelo primario."}
+              </div>
+            )}
+          </div>
+
+          {/* Secondary Model Chat Stream (Arena) */}
+          {secondaryModel && (
+            <div className="space-y-4 w-1/2">
+              {secondaryMessages.map((message) => (
+                <MessageBubble 
+                  key={`secondary-${message.id}`} 
+                  message={message} 
+                />
+              ))}
+              {chatMutation.isPending && (
+                <div className="flex justify-start">
+                  <div className="flex items-center gap-2 rounded-2xl px-4 py-3 text-sm text-white/45" style={{ background: "rgba(255,255,255,0.045)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                    <Loader2 size={14} className="animate-spin text-purple-400" /> {providers?.find((p: any) => p.id === secondaryModel)?.name} está procesando...
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -306,6 +399,14 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
           )}
 
           <form onSubmit={handleSubmit} className="flex items-end gap-3 relative">
+            {attachedFile && (
+              <div className="absolute bottom-full left-0 mb-2 rounded-xl bg-[#2d7bff]/20 text-[#2d7bff] px-3 py-1.5 text-xs font-medium border border-[#2d7bff]/30 flex items-center gap-2">
+                <Paperclip size={12} />
+                {attachedFile.name}
+                <button type="button" onClick={() => setAttachedFile(null)} className="ml-2 hover:text-white"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"></path></svg></button>
+              </div>
+            )}
+            
             {input.startsWith("/") && (
               <div className="absolute bottom-full left-0 mb-2 w-64 rounded-xl bg-[#14151a] p-2 shadow-xl border border-white/10 z-10">
                 <p className="text-xs font-semibold text-white/40 mb-2 px-2 uppercase tracking-wider">Comandos (Prompts)</p>
@@ -318,7 +419,26 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
             
             <div className="flex flex-1 items-center gap-2 rounded-2xl px-2" style={{ background: "rgba(255,255,255,0.045)", border: "1px solid rgba(255,255,255,0.09)" }}>
               {/* Botón de Adjuntar Archivo */}
-              <button type="button" className="p-2 text-white/40 hover:text-white transition-colors" title="Adjuntar archivo">
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept=".txt,.md,.json,.csv,.js,.py,.ts,.tsx,.html,.css"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      if (ev.target?.result) {
+                        setAttachedFile({ name: file.name, content: ev.target.result as string });
+                      }
+                    };
+                    reader.readAsText(file);
+                  }
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }} 
+              />
+              <button type="button" onClick={() => fileInputRef.current?.click()} className="p-2 text-white/40 hover:text-white transition-colors" title="Adjuntar archivo (Texto)">
                 <Paperclip size={18} />
               </button>
               
