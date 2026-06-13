@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { Database, Plus, Trash2, Folder, File as FileIcon } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
+import { KBUploader } from "./KBUploader";
 
 export default async function KnowledgePage() {
   const supabase = await createClient();
@@ -104,11 +105,9 @@ export default async function KnowledgePage() {
                 <div className="bg-black/20 -mx-6 -mb-6 p-4 mt-6 border-t border-white/5 flex items-center justify-between">
                   <div className="text-xs text-white/40 flex items-center gap-2">
                     <Database size={14} />
-                    Ready for uploads (API route pending)
+                    Ready for uploads
                   </div>
-                  <button disabled className="text-xs font-medium text-white/30 bg-white/5 px-3 py-1.5 rounded border border-white/5 cursor-not-allowed">
-                    Upload File
-                  </button>
+                  <KBUploader kbId={kb.id} />
                 </div>
               </div>
             ))

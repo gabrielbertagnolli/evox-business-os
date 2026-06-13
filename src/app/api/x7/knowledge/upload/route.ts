@@ -1,131 +1,103 @@
-import { NextRequest, NextResponse } from "next/dist/server/web/spec-extension/request";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { v4 as uuidv4 } from "uuid";
-
-// Simple text chunker inspired by Langchain RecursiveCharacterTextSplitter
-function chunkText(text: string, chunkSize: number = 1000, overlap: number = 200): string[] {
-  const chunks: string[] = [];
-  let i = 0;
-  while (i < text.length) {
-    const end = Math.min(i + chunkSize, text.length);
-    const chunk = text.slice(i, end);
-    chunks.push(chunk);
-    i += chunkSize - overlap;
-  }
-  return chunks;
-}
 
 export async function POST(req: NextRequest) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const formData = await req.formData();
     const file = formData.get("file") as File;
-    const knowledgeId = formData.get("knowledge_id") as string;
+    const knowledgeBaseId = formData.get("knowledge_base_id") as string;
 
-    if (!file || !knowledgeId) {
-      return NextResponse.json({ error: "Missing file or knowledge_id" }, { status: 400 });
+    if (!file || !knowledgeBaseId) {
+      return NextResponse.json({ error: "File and knowledge_base_id are required" }, { status: 400 });
     }
 
-    // Read text content (MVP supports txt, md, json, csv, etc)
-    const textContent = await file.text();
-    const chunks = chunkText(textContent);
-
-    // Get Provider Settings for Embeddings
-    const { data: settings } = await supabase
-      .from("x7_user_settings")
-      .select("*")
+    // Verify ownership of the knowledge base
+    const { data: kb, error: kbError } = await supabase
+      .from("x7_knowledge")
+      .select("id")
+      .eq("id", knowledgeBaseId)
       .eq("user_id", user.id)
       .single();
 
-    const provider = settings?.active_provider || "openai";
-    let apiKey = process.env.OPENAI_API_KEY || settings?.openai_api_key;
-    let endpoint = "https://api.openai.com/v1/embeddings";
-
-    if (provider !== "openai" && provider !== "anthropic") {
-      const { data: customProvider } = await supabase
-        .from("x7_llm_providers")
-        .select("*")
-        .eq("id", provider)
-        .single();
-      
-      if (customProvider) {
-        endpoint = `${customProvider.base_url.replace(/\/$/, "")}/embeddings`;
-        apiKey = customProvider.api_key || "";
-      }
+    if (kbError || !kb) {
+      return NextResponse.json({ error: "Knowledge base not found or access denied" }, { status: 404 });
     }
 
-    if (!apiKey && provider === "openai") {
-      return NextResponse.json({ error: "OpenAI API Key missing for embeddings" }, { status: 400 });
-    }
-
-    const fileId = uuidv4();
+    // Read text file content
+    const textContent = await file.text();
     
-    // Save File Record (Open-WebUI parity)
-    await supabase.from("x7_file").insert({
-      id: fileId,
-      user_id: user.id,
-      filename: file.name,
-      meta: { size: file.size, type: file.type },
-      created_at: Date.now(),
-      updated_at: Date.now()
-    });
+    // Chunking strategy (approx 1000 characters per chunk with 200 overlap)
+    const CHUNK_SIZE = 1000;
+    const OVERLAP = 200;
+    const chunks = [];
+    
+    for (let i = 0; i < textContent.length; i += (CHUNK_SIZE - OVERLAP)) {
+      chunks.push(textContent.substring(i, i + CHUNK_SIZE));
+    }
 
-    // Link File to Knowledge Base
-    await supabase.from("x7_knowledge_file").insert({
-      id: uuidv4(),
-      knowledge_id: knowledgeId,
-      file_id: fileId,
-      user_id: user.id,
-      created_at: Date.now(),
-      updated_at: Date.now()
-    });
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) return NextResponse.json({ error: "OPENAI_API_KEY missing" }, { status: 500 });
 
-    // Generate Embeddings via OpenAI compatible endpoint
-    const embeddingRes = await fetch(endpoint, {
+    // Generate Embeddings via OpenAI
+    const response = await fetch("https://api.openai.com/v1/embeddings", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`
       },
       body: JSON.stringify({
         input: chunks,
-        model: "text-embedding-3-small" // Or your custom provider's default embedding model
+        model: "text-embedding-3-small"
       })
     });
 
-    if (!embeddingRes.ok) {
-      const err = await embeddingRes.text();
-      console.error("Embedding API Error:", err);
-      return NextResponse.json({ error: "Failed to generate embeddings" }, { status: 500 });
-    }
+    const embedData = await response.json();
+    if (embedData.error) throw new Error(embedData.error.message);
 
-    const embeddingData = await embeddingRes.json();
-    const vectors = embeddingData.data;
+    const fileId = crypto.randomUUID();
+    
+    // 1. Insert into x7_file
+    const { error: fileError } = await supabase.from("x7_file").insert({
+      id: fileId,
+      user_id: user.id,
+      filename: file.name,
+      created_at: Date.now(),
+      updated_at: Date.now()
+    });
+    if (fileError) throw new Error(fileError.message);
 
-    // Insert chunks with embeddings into pgvector
-    const chunkInserts = chunks.map((chunk, index) => ({
+    // 2. Link file to knowledge base
+    const { error: linkError } = await supabase.from("x7_knowledge_file").insert({
+      id: crypto.randomUUID(),
+      knowledge_id: knowledgeBaseId,
+      file_id: fileId,
+      user_id: user.id,
+      created_at: Date.now(),
+      updated_at: Date.now()
+    });
+    if (linkError) throw new Error(linkError.message);
+
+    // 3. Insert chunks
+    const records = chunks.map((chunk, index) => ({
       file_id: fileId,
       content: chunk,
-      metadata: { loc: index },
-      embedding: vectors[index].embedding
+      metadata: { source: file.name, chunk_index: index },
+      embedding: embedData.data[index].embedding
     }));
 
-    const { error: chunkError } = await supabase.from("x7_document_chunks").insert(chunkInserts);
+    const { error: insertError } = await supabase
+      .from("x7_document_chunks")
+      .insert(records);
 
-    if (chunkError) {
-      console.error("Chunk Insert Error:", chunkError);
-      return NextResponse.json({ error: "Failed to save document chunks" }, { status: 500 });
-    }
+    if (insertError) throw new Error(insertError.message);
 
-    return NextResponse.json({ success: true, file_id: fileId, chunks_processed: chunks.length });
+    return NextResponse.json({ success: true, chunksProcessed: chunks.length, filename: file.name });
   } catch (error: any) {
-    console.error("Upload API Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error.message || "Failed to process document" }, { status: 500 });
   }
 }
