@@ -1,10 +1,11 @@
 "use client";
 
-import { Bot, DatabaseZap, Loader2, Send, ShieldCheck, Sparkles, Zap, Edit2, RotateCw, ThumbsUp, ThumbsDown, Globe, Paperclip, ChevronDown } from "lucide-react";
+import { Bot, DatabaseZap, Loader2, Send, ShieldCheck, Sparkles, Zap, Edit2, RotateCw, ThumbsUp, ThumbsDown, Globe, Paperclip, ChevronDown, Mic } from "lucide-react";
 import { useMemo, useState, useEffect, type FormEvent } from "react";
 import { useX7Chat, useX7ChatDetail, type X7Message, type X7Summary } from "@/hooks/api/useX7Chat";
 import { useRouter } from "next/navigation";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { MarkdownRenderer } from "./components/MarkdownRenderer";
 
 const INITIAL_SUMMARY: X7Summary = {
   connectedSources: 0,
@@ -34,16 +35,6 @@ const SUGGESTED_PROMPTS = [
   "Propón una automatización usando mis fuentes actuales.",
 ];
 
-function formatAssistantText(content: string) {
-  const lines = content.split("\n");
-
-  return lines.map((line, index) => (
-    <span key={`${line}-${index}`}>
-      {line}
-      {index < lines.length - 1 && <br />}
-    </span>
-  ));
-}
 
 function SummaryCard({ label, value, detail }: { label: string; value: string | number; detail: string }) {
   return (
@@ -85,7 +76,11 @@ function MessageBubble({ message, onRegenerate, onFeedback }: { message: X7Messa
             <Sparkles size={12} /> X7
           </div>
         )}
-        <p>{formatAssistantText(message.content)}</p>
+        {isUser ? (
+          <p className="whitespace-pre-wrap">{message.content}</p>
+        ) : (
+          <MarkdownRenderer content={message.content} />
+        )}
       </div>
 
       {/* Acciones de Mensaje */}
@@ -129,6 +124,7 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const [isSecondaryDropdownOpen, setIsSecondaryDropdownOpen] = useState(false);
   const [attachedFile, setAttachedFile] = useState<{ name: string, content: string } | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   
   // For dual model chat, we need a way to group messages or just send to both
@@ -161,7 +157,41 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
   }, [chatDetail, chatId]);
 
   const visibleSources = useMemo(() => summary.sourceNames.slice(0, 5), [summary.sourceNames]);
-  const canSubmit = input.trim().length > 0 && !chatMutation.isPending;
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      setIsRecording(false);
+      return;
+    }
+    
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Tu navegador no soporta entrada por voz.");
+      return;
+    }
+    
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'es-ES'; // Default a español, idealmente se extraería del locale
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    
+    recognition.onstart = () => setIsRecording(true);
+    recognition.onresult = (event: any) => {
+      const transcript = Array.from(event.results)
+        .map((result: any) => result[0].transcript)
+        .join('');
+      setInput(transcript);
+    };
+    recognition.onerror = (event: any) => {
+      console.error("Speech recognition error:", event.error);
+      setIsRecording(false);
+    };
+    recognition.onend = () => setIsRecording(false);
+    
+    recognition.start();
+  };
+
+  const canSubmit = (input.trim() !== "" || attachedFile !== null) && !chatMutation.isPending;
 
   async function submitPrompt(prompt: string, parentId?: string) {
     // Append attached file content to prompt if exists
@@ -458,6 +488,16 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
                 title={webSearchEnabled ? "Búsqueda web activada" : "Búsqueda web desactivada"}
               >
                 <Globe size={18} />
+              </button>
+              
+              {/* Botón de Dictado por Voz */}
+              <button 
+                type="button" 
+                onClick={toggleRecording}
+                className={`p-2 transition-colors rounded-xl ${isRecording ? 'text-red-400 bg-red-500/10 animate-pulse' : 'text-white/40 hover:text-white hover:bg-white/5'}`} 
+                title={isRecording ? "Detener grabación" : "Dictado por voz"}
+              >
+                <Mic size={18} />
               </button>
             </div>
             

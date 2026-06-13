@@ -180,7 +180,23 @@ async function generateAIAnswer(userId: string, messages: X7ChatMessage[], conte
   ].join(" ");
 
   if (webSearch) {
-    systemPrompt += "\n\n[INSTRUCCIÓN CRÍTICA]: El usuario activó explícitamente la búsqueda web. DEBES usar la herramienta 'web_search' o 'brave_search' ahora mismo antes de darle tu respuesta final.";
+    systemPrompt += "\n\n[INSTRUCCIÓN CRÍTICA]: El usuario activó explícitamente la búsqueda web. DEBES usar la herramienta 'web_search' ahora mismo antes de darle tu respuesta final.";
+    
+    // Inject native web_search tool
+    tools.push({
+      type: "function",
+      function: {
+        name: "web_search",
+        description: "Busca informacion actualizada en internet usando un motor de busqueda. Devuelve un resumen en Markdown de los resultados mas relevantes.",
+        parameters: {
+          type: "object",
+          properties: {
+            query: { type: "string", description: "La consulta o pregunta a buscar en internet" }
+          },
+          required: ["query"]
+        }
+      }
+    });
   }
 
   const openAiMessages: any[] = [
@@ -265,7 +281,15 @@ async function generateAIAnswer(userId: string, messages: X7ChatMessage[], conte
         const skillToRun = context.skills.find(s => s.id === skillId);
         let toolResult = "Skill not found or inactive";
         
-        if (skillToRun) {
+        if (skillName === "web_search") {
+          try {
+            const args = JSON.parse(toolCall.function.arguments || "{}");
+            const res = await fetch(`https://s.jina.ai/${encodeURIComponent(args.query)}`);
+            toolResult = (await res.text()).substring(0, 8000);
+          } catch (e: any) {
+            toolResult = `Error en la búsqueda web: ${e.message}`;
+          }
+        } else if (skillToRun) {
           try {
             const args = JSON.parse(toolCall.function.arguments || "{}");
             toolResult = await executeSkill(skillToRun, args);
