@@ -1,0 +1,53 @@
+{
+  "node": {
+    "006cec206e928a977192e2af096df033614d221acb": {
+      "workers": {
+        "app/dashboard/x7/skills/page": {
+          "moduleId": 13325,
+          "async": false,
+          "exportedName": "signOut",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts"
+        }
+      },
+      "exportedName": "signOut",
+      "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts"
+    },
+    "4045e9bb1f3c5fe15b6e9d2862bf0a857f6b58fd43": {
+      "workers": {
+        "app/dashboard/x7/skills/page": {
+          "moduleId": 13325,
+          "async": false,
+          "exportedName": "$$RSC_SERVER_ACTION_2",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/app/dashboard/x7/skills/page.tsx"
+        }
+      },
+      "exportedName": "$$RSC_SERVER_ACTION_2",
+      "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/app/dashboard/x7/skills/page.tsx"
+    },
+    "40daec499bf8da3e4652ba995840e081b09a1fa6fe": {
+      "workers": {
+        "app/dashboard/x7/skills/page": {
+          "moduleId": 13325,
+          "async": false,
+          "exportedName": "$$RSC_SERVER_ACTION_0",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/app/dashboard/x7/skills/page.tsx"
+        }
+      },
+      "exportedName": "$$RSC_SERVER_ACTION_0",
+      "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/app/dashboard/x7/skills/page.tsx"
+    },
+    "601f15243dba8d4bb2136c809a91847e221f17b46e": {
+      "workers": {
+        "app/dashboard/x7/skills/page": {
+          "moduleId": 13325,
+          "async": false,
+          "exportedName": "$$RSC_SERVER_ACTION_1",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/app/dashboard/x7/skills/page.tsx"
+        }
+      },
+      "exportedName": "$$RSC_SERVER_ACTION_1",
+      "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/app/dashboard/x7/skills/page.tsx"
+    }
+  },
+  "edge": {}
+}

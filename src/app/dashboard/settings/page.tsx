@@ -15,9 +15,10 @@ export default function SettingsPage() {
 
       <div className="space-y-4">
         {[
-          { section: "Workspace", items: ["Name", "Timezone", "Language"] },
-          { section: "Notifications", items: ["WhatsApp alerts", "Email digests", "Slack notifications"] },
-          { section: "Billing", items: ["Plan", "Credits", "Payment method"] },
+          { section: "Workspace", items: [{ name: "Name", href: "#" }, { name: "Timezone", href: "#" }, { name: "Language", href: "#" }] },
+          { section: "X7 AI Agent", items: [{ name: "LLM Providers & API Keys", href: "/dashboard/settings/x7-providers" }] },
+          { section: "Notifications", items: [{ name: "WhatsApp alerts", href: "#" }, { name: "Email digests", href: "#" }] },
+          { section: "Billing", items: [{ name: "Plan", href: "#" }, { name: "Credits", href: "#" }] },
         ].map(({ section, items }) => (
           <div key={section} className="glass rounded-2xl p-5">
             <h2 className="mb-4 text-xs font-semibold tracking-[0.18em] text-white/30 uppercase">
@@ -25,14 +26,15 @@ export default function SettingsPage() {
             </h2>
             <div className="space-y-1">
               {items.map((item) => (
-                <div
-                  key={item}
-                  className="glass-hover flex items-center justify-between rounded-xl px-3 py-3"
+                <a
+                  key={item.name}
+                  href={item.href}
+                  className="glass-hover flex items-center justify-between rounded-xl px-3 py-3 transition hover:bg-white/5"
                   style={{ border: "1px solid transparent" }}
                 >
-                  <span className="text-sm text-white/60">{item}</span>
+                  <span className="text-sm text-white/60">{item.name}</span>
                   <span className="text-xs text-white/25">Configure →</span>
-                </div>
+                </a>
               ))}
             </div>
           </div>

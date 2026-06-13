@@ -1,0 +1,17 @@
+{
+  "node": {
+    "006cec206e928a977192e2af096df033614d221acb": {
+      "workers": {
+        "app/dashboard/x7/workspace/page": {
+          "moduleId": 86968,
+          "async": false,
+          "exportedName": "signOut",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts"
+        }
+      },
+      "exportedName": "signOut",
+      "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts"
+    }
+  },
+  "edge": {}
+}

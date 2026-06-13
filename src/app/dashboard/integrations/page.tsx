@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback, Suspense } from "react";
+import { useState, useCallback, Suspense } from "react";
+import { useMountEffect } from "@/hooks/useMountEffect";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Plug, CheckCircle2, X, AlertCircle, Loader2, ExternalLink, Key } from "lucide-react";
 import { PROVIDERS, INTEGRATION_CATEGORIES, type ProviderId } from "@/lib/integrations/config";
@@ -72,12 +73,12 @@ function IntegrationsContent() {
     }
   }, []);
 
-  useEffect(() => {
+  useMountEffect(() => {
     fetchIntegrations();
-  }, [fetchIntegrations]);
+  });
 
   // Handle URL params after OAuth redirect
-  useEffect(() => {
+  useMountEffect(() => {
     const connected = searchParams.get("connected");
     const error = searchParams.get("error");
 
@@ -96,7 +97,7 @@ function IntegrationsContent() {
       showToast("error", messages[error] ?? `OAuth error: ${error}`);
       router.replace("/dashboard/integrations");
     }
-  }, [searchParams, fetchIntegrations, router]);
+  });
 
   const connectedSet = new Set(integrations.map((i) => i.provider));
   const totalConnected = connectedSet.size;

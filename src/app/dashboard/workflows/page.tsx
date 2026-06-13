@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
+import { useMountEffect } from "@/hooks/useMountEffect";
 import { GitBranch, Plus, Trash2, Play, Loader2, X, ArrowRight } from "lucide-react";
 import { PROVIDERS, type ProviderId } from "@/lib/integrations/config";
 
@@ -88,7 +89,7 @@ export default function WorkflowsPage() {
     }
   }, []);
 
-  useEffect(() => { fetchWorkflows(); }, [fetchWorkflows]);
+  useMountEffect(() => { fetchWorkflows(); });
 
   async function deleteWorkflow(id: string) {
     setWorkflows((prev) => prev.filter((w) => w.id !== id));

@@ -1,0 +1,29 @@
+{
+  "node": {
+    "006cec206e928a977192e2af096df033614d221acb": {
+      "workers": {
+        "app/dashboard/x7/memory/page": {
+          "moduleId": 98835,
+          "async": false,
+          "exportedName": "signOut",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts"
+        }
+      },
+      "exportedName": "signOut",
+      "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts"
+    },
+    "4053cdb887fae49f76226fb03eaba75840b792655c": {
+      "workers": {
+        "app/dashboard/x7/memory/page": {
+          "moduleId": 98835,
+          "async": false,
+          "exportedName": "$$RSC_SERVER_ACTION_0",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/app/dashboard/x7/memory/page.tsx"
+        }
+      },
+      "exportedName": "$$RSC_SERVER_ACTION_0",
+      "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/app/dashboard/x7/memory/page.tsx"
+    }
+  },
+  "edge": {}
+}

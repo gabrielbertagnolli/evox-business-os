@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
+import { useMountEffect } from "@/hooks/useMountEffect";
 import { Bot, Plus, Search, Trash2, Play, Pause, Loader2, X, ChevronDown } from "lucide-react";
 import { PROVIDERS, type ProviderId } from "@/lib/integrations/config";
 
@@ -242,14 +243,14 @@ export default function AgentsPage() {
     }
   }, []);
 
-  useEffect(() => {
+  useMountEffect(() => {
     fetchAgents();
     // Fetch connected integrations for the modal
     fetch("/api/integrations/list")
       .then((r) => r.json())
       .then((d) => setConnectedProviders((d.integrations ?? []).map((i: { provider: string }) => i.provider)))
       .catch(() => {});
-  }, [fetchAgents]);
+  });
 
   const filtered = agents.filter(
     (a) =>

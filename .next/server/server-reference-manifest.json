@@ -1,0 +1,258 @@
+{
+  "node": {
+    "006cec206e928a977192e2af096df033614d221acb": {
+      "workers": {
+        "app/dashboard/agents/page": {
+          "moduleId": 29962,
+          "async": false,
+          "exportedName": "signOut",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts"
+        },
+        "app/dashboard/integrations/page": {
+          "moduleId": 1082,
+          "async": false,
+          "exportedName": "signOut",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts"
+        },
+        "app/dashboard/page": {
+          "moduleId": 6329,
+          "async": false,
+          "exportedName": "signOut",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts"
+        },
+        "app/dashboard/settings/page": {
+          "moduleId": 92293,
+          "async": false,
+          "exportedName": "signOut",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts"
+        },
+        "app/dashboard/settings/x7-import-skills/page": {
+          "moduleId": 9034,
+          "async": false,
+          "exportedName": "signOut",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts"
+        },
+        "app/dashboard/settings/x7-providers/page": {
+          "moduleId": 35801,
+          "async": false,
+          "exportedName": "signOut",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts"
+        },
+        "app/dashboard/skills/page": {
+          "moduleId": 29180,
+          "async": false,
+          "exportedName": "signOut",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts"
+        },
+        "app/dashboard/workflows/page": {
+          "moduleId": 89340,
+          "async": false,
+          "exportedName": "signOut",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts"
+        },
+        "app/dashboard/x7/[id]/page": {
+          "moduleId": 69792,
+          "async": false,
+          "exportedName": "signOut",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts"
+        },
+        "app/dashboard/x7/admin/page": {
+          "moduleId": 66666,
+          "async": false,
+          "exportedName": "signOut",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts"
+        },
+        "app/dashboard/x7/channels/[id]/page": {
+          "moduleId": 65288,
+          "async": false,
+          "exportedName": "signOut",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts"
+        },
+        "app/dashboard/x7/channels/page": {
+          "moduleId": 2758,
+          "async": false,
+          "exportedName": "signOut",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts"
+        },
+        "app/dashboard/x7/knowledge/page": {
+          "moduleId": 20608,
+          "async": false,
+          "exportedName": "signOut",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts"
+        },
+        "app/dashboard/x7/memory/page": {
+          "moduleId": 98835,
+          "async": false,
+          "exportedName": "signOut",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts"
+        },
+        "app/dashboard/x7/notes/page": {
+          "moduleId": 20188,
+          "async": false,
+          "exportedName": "signOut",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts"
+        },
+        "app/dashboard/x7/page": {
+          "moduleId": 38410,
+          "async": false,
+          "exportedName": "signOut",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts"
+        },
+        "app/dashboard/x7/skills/page": {
+          "moduleId": 13325,
+          "async": false,
+          "exportedName": "signOut",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts"
+        },
+        "app/dashboard/x7/terminal/page": {
+          "moduleId": 80020,
+          "async": false,
+          "exportedName": "signOut",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts"
+        },
+        "app/dashboard/x7/workspace/page": {
+          "moduleId": 86968,
+          "async": false,
+          "exportedName": "signOut",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts"
+        }
+      },
+      "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts",
+      "exportedName": "signOut"
+    },
+    "405fa9b66a4e3f428c5ccbba74025b668b2139ff8e": {
+      "workers": {
+        "app/dashboard/settings/x7-providers/page": {
+          "moduleId": 35801,
+          "async": false,
+          "exportedName": "$$RSC_SERVER_ACTION_2",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/app/dashboard/settings/x7-providers/page.tsx"
+        }
+      },
+      "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/app/dashboard/settings/x7-providers/page.tsx",
+      "exportedName": "$$RSC_SERVER_ACTION_2"
+    },
+    "406ae6bb881cb8b74ee821ff2c2c626b7a0f8e161c": {
+      "workers": {
+        "app/dashboard/settings/x7-providers/page": {
+          "moduleId": 35801,
+          "async": false,
+          "exportedName": "$$RSC_SERVER_ACTION_1",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/app/dashboard/settings/x7-providers/page.tsx"
+        }
+      },
+      "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/app/dashboard/settings/x7-providers/page.tsx",
+      "exportedName": "$$RSC_SERVER_ACTION_1"
+    },
+    "40f90a8bb40d49e05f2ac3571d68758917b7d5620c": {
+      "workers": {
+        "app/dashboard/settings/x7-providers/page": {
+          "moduleId": 35801,
+          "async": false,
+          "exportedName": "$$RSC_SERVER_ACTION_0",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/app/dashboard/settings/x7-providers/page.tsx"
+        }
+      },
+      "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/app/dashboard/settings/x7-providers/page.tsx",
+      "exportedName": "$$RSC_SERVER_ACTION_0"
+    },
+    "406a20fac4dbb8c59a24f76901468d52836d3dddac": {
+      "workers": {
+        "app/dashboard/x7/knowledge/page": {
+          "moduleId": 20608,
+          "async": false,
+          "exportedName": "$$RSC_SERVER_ACTION_1",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/app/dashboard/x7/knowledge/page.tsx"
+        }
+      },
+      "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/app/dashboard/x7/knowledge/page.tsx",
+      "exportedName": "$$RSC_SERVER_ACTION_1"
+    },
+    "40faf1f6e2f4246baff1631c4f95fe480eb3e3daac": {
+      "workers": {
+        "app/dashboard/x7/knowledge/page": {
+          "moduleId": 20608,
+          "async": false,
+          "exportedName": "$$RSC_SERVER_ACTION_0",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/app/dashboard/x7/knowledge/page.tsx"
+        }
+      },
+      "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/app/dashboard/x7/knowledge/page.tsx",
+      "exportedName": "$$RSC_SERVER_ACTION_0"
+    },
+    "4053cdb887fae49f76226fb03eaba75840b792655c": {
+      "workers": {
+        "app/dashboard/x7/memory/page": {
+          "moduleId": 98835,
+          "async": false,
+          "exportedName": "$$RSC_SERVER_ACTION_0",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/app/dashboard/x7/memory/page.tsx"
+        }
+      },
+      "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/app/dashboard/x7/memory/page.tsx",
+      "exportedName": "$$RSC_SERVER_ACTION_0"
+    },
+    "4045e9bb1f3c5fe15b6e9d2862bf0a857f6b58fd43": {
+      "workers": {
+        "app/dashboard/x7/skills/page": {
+          "moduleId": 13325,
+          "async": false,
+          "exportedName": "$$RSC_SERVER_ACTION_2",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/app/dashboard/x7/skills/page.tsx"
+        }
+      },
+      "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/app/dashboard/x7/skills/page.tsx",
+      "exportedName": "$$RSC_SERVER_ACTION_2"
+    },
+    "40daec499bf8da3e4652ba995840e081b09a1fa6fe": {
+      "workers": {
+        "app/dashboard/x7/skills/page": {
+          "moduleId": 13325,
+          "async": false,
+          "exportedName": "$$RSC_SERVER_ACTION_0",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/app/dashboard/x7/skills/page.tsx"
+        }
+      },
+      "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/app/dashboard/x7/skills/page.tsx",
+      "exportedName": "$$RSC_SERVER_ACTION_0"
+    },
+    "601f15243dba8d4bb2136c809a91847e221f17b46e": {
+      "workers": {
+        "app/dashboard/x7/skills/page": {
+          "moduleId": 13325,
+          "async": false,
+          "exportedName": "$$RSC_SERVER_ACTION_1",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/app/dashboard/x7/skills/page.tsx"
+        }
+      },
+      "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/app/dashboard/x7/skills/page.tsx",
+      "exportedName": "$$RSC_SERVER_ACTION_1"
+    },
+    "40d8b74061d990bb69471e4e66ad5a030edb493d31": {
+      "workers": {
+        "app/login/page": {
+          "moduleId": 48431,
+          "async": false,
+          "exportedName": "signIn",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts"
+        }
+      },
+      "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts",
+      "exportedName": "signIn"
+    },
+    "4058bc7db2684f6c1f74141b71331813222eab72df": {
+      "workers": {
+        "app/login/page": {
+          "moduleId": 48431,
+          "async": false,
+          "exportedName": "signUp",
+          "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts"
+        }
+      },
+      "filename": "Downloads/Agencia/Dev/evox-os-repo/evox-business-os/src/actions/auth.ts",
+      "exportedName": "signUp"
+    }
+  },
+  "edge": {},
+  "encryptionKey": "ZMv9EFF1IwBUu9oftxHwMAprWhkSupGyUv8RbY39yqw="
+}
