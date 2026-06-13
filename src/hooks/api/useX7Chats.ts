@@ -4,8 +4,8 @@ export interface X7ChatMeta {
   id: string;
   title: string;
   folder_id: string | null;
-  is_pinned: boolean;
-  is_archived: boolean;
+  pinned: boolean;
+  archived: boolean;
   updated_at: string;
 }
 
@@ -17,7 +17,8 @@ export function useX7Chats() {
       if (!response.ok) {
         throw new Error("Failed to fetch chats");
       }
-      return (await response.json()) as X7ChatMeta[];
+      const data = await response.json();
+      return data.items as X7ChatMeta[];
     },
   });
 }

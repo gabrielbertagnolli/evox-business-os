@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const supabase = await createClient();
   const {
     data: { user },
@@ -14,7 +15,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const { data: agent, error } = await supabase
     .from("x7_agents")
     .select("*")
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("user_id", user.id)
     .single();
 
@@ -29,7 +30,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json(agent);
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const supabase = await createClient();
   const {
     data: { user },
@@ -58,7 +60,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const { error } = await supabase
     .from("x7_agents")
     .update(updateData)
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("user_id", user.id);
 
   if (error) {
@@ -68,7 +70,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json({ message: "Agent updated successfully" });
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const supabase = await createClient();
   const {
     data: { user },
@@ -81,7 +84,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   const { error } = await supabase
     .from("x7_agents")
     .delete()
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("user_id", user.id);
 
   if (error) {

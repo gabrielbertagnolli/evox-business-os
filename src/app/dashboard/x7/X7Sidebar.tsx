@@ -36,8 +36,8 @@ export default function X7Sidebar({ isCollapsed = false, onToggle }: X7SidebarPr
     }
   });
 
-  const pinnedChats = chats?.filter(c => c.is_pinned) || [];
-  const recentChats = chats?.filter(c => !c.is_pinned) || [];
+  const pinnedChats = chats?.filter(c => c.pinned) || [];
+  const recentChats = chats?.filter(c => !c.pinned) || [];
 
   return (
     <aside
