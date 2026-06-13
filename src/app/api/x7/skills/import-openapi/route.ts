@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/dist/server/web/spec-extension/request";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 function openApiToSchema(parameters: any[], requestBody: any) {

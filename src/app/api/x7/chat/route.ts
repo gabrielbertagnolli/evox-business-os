@@ -50,6 +50,41 @@ function normalizeMessages(value: unknown): X7ChatMessage[] {
     }));
 }
 
+function rankMemoryNodes(nodes: any[], query: string): any[] {
+  if (!query || !nodes || nodes.length === 0) {
+    return nodes.slice(0, 10);
+  }
+  
+  const stopwords = new Set(["de", "la", "el", "que", "y", "en", "un", "para", "con", "a", "los", "las", "del", "al", "o", "no", "si", "por", "es", "me", "se", "lo"]);
+  const queryWords = query
+    .toLowerCase()
+    .replace(/[^\w\s]/g, "")
+    .split(/\s+/)
+    .filter(w => w.length > 2 && !stopwords.has(w));
+    
+  if (queryWords.length === 0) {
+    return nodes.slice(0, 10);
+  }
+  
+  const scored = nodes.map(node => {
+    const contentLower = node.content.toLowerCase();
+    let score = 0;
+    for (const word of queryWords) {
+      if (contentLower.includes(word)) {
+        score += 1;
+      }
+    }
+    return { node, score };
+  });
+  
+  scored.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return new Date(b.node.created_at).getTime() - new Date(a.node.created_at).getTime();
+  });
+  
+  return scored.slice(0, 10).map(s => s.node);
+}
+
 function buildFallbackAnswer(messages: X7ChatMessage[], context: Awaited<ReturnType<typeof getX7DataContext>>) {
   const latestQuestion = messages.filter((message) => message.role === "user").at(-1)?.content ?? "";
   const summary = summarizeX7DataContext(context);
@@ -174,7 +209,7 @@ async function generateAIAnswer(userId: string, messages: X7ChatMessage[], conte
     `Contexto de fuentes y memoria a largo plazo:\n${JSON.stringify({ 
       integrations: context.integrations, 
       agents: context.agents,
-      memoryNodes: context.memoryNodes // Inyectar memoria a largo plazo al contexto
+      memoryNodes: rankMemoryNodes(context.memoryNodes, lastUserMessage || "")
     }, null, 2)}`,
     ragContext
   ].join(" ");
@@ -287,49 +322,53 @@ async function generateAIAnswer(userId: string, messages: X7ChatMessage[], conte
 
     openAiMessages.push(responseMessage);
 
-    // Si el modelo decide ejecutar una herramienta (Skill)
+    // Si el modelo decide ejecutar una herramienta (Skill) en paralelo
     if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
-      for (const toolCall of responseMessage.tool_calls) {
-        const skillName = toolCall.function.name;
-        const skillId = skillName.replace("skill_", "").replace(/_/g, "-");
-        
-        const skillToRun = context.skills.find(s => s.id === skillId);
-        let toolResult = "Skill not found or inactive";
-        
-        if (skillName === "web_search") {
-          try {
-            const args = JSON.parse(toolCall.function.arguments || "{}");
-            const res = await fetch(`https://s.jina.ai/${encodeURIComponent(args.query)}`);
-            toolResult = (await res.text()).substring(0, 8000);
-          } catch (e: any) {
-            toolResult = `Error en la búsqueda web: ${e.message}`;
+      const toolResults = await Promise.all(
+        responseMessage.tool_calls.map(async (toolCall: any) => {
+          const skillName = toolCall.function.name;
+          const skillId = skillName.replace("skill_", "").replace(/_/g, "-");
+          
+          const skillToRun = context.skills.find(s => s.id === skillId);
+          let toolResult = "Skill not found or inactive";
+          
+          if (skillName === "web_search") {
+            try {
+              const args = JSON.parse(toolCall.function.arguments || "{}");
+              const res = await fetch(`https://s.jina.ai/${encodeURIComponent(args.query)}`);
+              toolResult = (await res.text()).substring(0, 8000);
+            } catch (e: any) {
+              toolResult = `Error en la búsqueda web: ${e.message}`;
+            }
+          } else if (skillName === "read_url") {
+            try {
+              const args = JSON.parse(toolCall.function.arguments || "{}");
+              const res = await fetch(`https://r.jina.ai/${encodeURIComponent(args.url)}`);
+              toolResult = (await res.text()).substring(0, 8000); // Limit to 8k chars to prevent context overflow
+            } catch (e: any) {
+              toolResult = `Error al leer la URL: ${e.message}`;
+            }
+          } else if (skillToRun) {
+            try {
+              const args = JSON.parse(toolCall.function.arguments || "{}");
+              toolResult = await executeSkill(skillToRun, args);
+            } catch (e: any) {
+              toolResult = `Error parsing arguments: ${e.message}`;
+            }
           }
-        } else if (skillName === "read_url") {
-          try {
-            const args = JSON.parse(toolCall.function.arguments || "{}");
-            const res = await fetch(`https://r.jina.ai/${encodeURIComponent(args.url)}`);
-            toolResult = (await res.text()).substring(0, 8000); // Limit to 8k chars to prevent context overflow
-          } catch (e: any) {
-            toolResult = `Error al leer la URL: ${e.message}`;
-          }
-        } else if (skillToRun) {
-          try {
-            const args = JSON.parse(toolCall.function.arguments || "{}");
-            toolResult = await executeSkill(skillToRun, args);
-          } catch (e: any) {
-            toolResult = `Error parsing arguments: ${e.message}`;
-          }
-        }
 
-        // Agregar el resultado de la herramienta al historial
-        openAiMessages.push({
-          role: "tool",
-          tool_call_id: toolCall.id,
-          name: skillName,
-          content: toolResult
-        });
-      }
-      // Continuar el bucle para que el modelo lea el resultado de la herramienta
+          return {
+            role: "tool",
+            tool_call_id: toolCall.id,
+            name: skillName,
+            content: toolResult
+          };
+        })
+      );
+
+      // Agregar todos los resultados de las herramientas al historial
+      openAiMessages.push(...toolResults);
+      // Continuar el bucle para que el modelo lea los resultados de las herramientas
       continue;
     }
 

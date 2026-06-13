@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { Database, Plus, Trash2, Folder, File as FileIcon } from "lucide-react";
-import { v4 as uuidv4 } from "uuid";
+import crypto from "crypto";
 import { KBUploader } from "./KBUploader";
 
 export default async function KnowledgePage() {
@@ -25,7 +25,7 @@ export default async function KnowledgePage() {
     if (!user) return;
 
     await supabase.from("x7_knowledge").insert({
-      id: uuidv4(),
+      id: crypto.randomUUID(),
       user_id: user.id,
       name: formData.get("name") as string,
       description: formData.get("description") as string,

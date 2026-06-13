@@ -1,7 +1,7 @@
 "use client";
 
 import { Bot, DatabaseZap, Loader2, Send, ShieldCheck, Sparkles, Zap, Edit2, RotateCw, ThumbsUp, ThumbsDown, Globe, Paperclip, ChevronDown, Mic } from "lucide-react";
-import { useMemo, useState, useEffect, type FormEvent } from "react";
+import { useMemo, useState, useEffect, useRef, type FormEvent } from "react";
 import { useX7Chat, useX7ChatDetail, type X7Message, type X7Summary } from "@/hooks/api/useX7Chat";
 import { useRouter } from "next/navigation";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
@@ -125,7 +125,7 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
   const [isSecondaryDropdownOpen, setIsSecondaryDropdownOpen] = useState(false);
   const [attachedFile, setAttachedFile] = useState<{ name: string, content: string } | null>(null);
   const [isRecording, setIsRecording] = useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // For dual model chat, we need a way to group messages or just send to both
   const [secondaryMessages, setSecondaryMessages] = useState<X7Message[]>([]);

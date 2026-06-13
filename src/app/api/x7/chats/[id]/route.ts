@@ -27,7 +27,8 @@ function buildChatHistory(messages: any[]) {
   };
 }
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const supabase = await createClient();
   const {
     data: { user },
@@ -36,8 +37,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
-  const { id } = params;
 
   // 1. Get Chat Metadata
   const { data: chat, error: chatError } = await supabase
@@ -84,7 +83,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json(responsePayload);
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const supabase = await createClient();
   const {
     data: { user },
@@ -93,8 +93,6 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
-  const { id } = params;
 
   const { error } = await supabase
     .from("x7_chats")

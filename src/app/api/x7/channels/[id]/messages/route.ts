@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         user_id,
         user:user_id(email)
       `)
-      .eq("channel_id", params.id)
+      .eq("channel_id", id)
       .order("created_at", { ascending: true });
 
     if (error) throw new Error(error.message);
@@ -29,7 +30,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -45,7 +47,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const { data: message, error } = await supabase
       .from("x7_channel_messages")
       .insert({
-        channel_id: params.id,
+        channel_id: id,
         user_id: user.id,
         content,
         role: "user"
@@ -58,7 +60,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     // AI Mention logic (Mentions @x7)
     if (content.toLowerCase().includes("@x7")) {
       // Non-blocking trigger AI response
-      triggerAIResponse(params.id, content, user.id);
+      triggerAIResponse(id, content, user.id);
     }
 
     return NextResponse.json(message);

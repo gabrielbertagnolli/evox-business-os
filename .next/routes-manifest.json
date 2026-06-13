@@ -1,0 +1,385 @@
+{
+  "version": 3,
+  "pages404": true,
+  "appType": "app",
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "priority": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/:path*",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors 'self' https://app.cofounder.co https://staging.app.cofounder.co https://cto.cofounder.co https://staging.cto.cofounder.co;"
+        }
+      ],
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?(?:/)?$"
+    }
+  ],
+  "onMatchHeaders": [],
+  "rewrites": {
+    "beforeFiles": [],
+    "afterFiles": [],
+    "fallback": []
+  },
+  "dynamicRoutes": [
+    {
+      "page": "/api/agents/[id]",
+      "regex": "^/api/agents/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/agents/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/x7/channels/[id]",
+      "regex": "^/api/x7/channels/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/x7/channels/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/x7/channels/[id]/messages",
+      "regex": "^/api/x7/channels/([^/]+?)/messages(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/x7/channels/(?<nxtPid>[^/]+?)/messages(?:/)?$"
+    },
+    {
+      "page": "/api/x7/chats/[id]",
+      "regex": "^/api/x7/chats/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/x7/chats/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/x7/functions/[id]",
+      "regex": "^/api/x7/functions/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/x7/functions/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/x7/notes/[id]",
+      "regex": "^/api/x7/notes/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/x7/notes/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/dashboard/x7/channels/[id]",
+      "regex": "^/dashboard/x7/channels/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/dashboard/x7/channels/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/dashboard/x7/[id]",
+      "regex": "^/dashboard/x7/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/dashboard/x7/(?<nxtPid>[^/]+?)(?:/)?$"
+    }
+  ],
+  "staticRoutes": [
+    {
+      "page": "/",
+      "regex": "^/(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/(?:/)?$"
+    },
+    {
+      "page": "/_global-error",
+      "regex": "^/_global\\-error(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_global\\-error(?:/)?$"
+    },
+    {
+      "page": "/_not-found",
+      "regex": "^/_not\\-found(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/api/agents",
+      "regex": "^/api/agents(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/agents(?:/)?$"
+    },
+    {
+      "page": "/api/integrations/callback",
+      "regex": "^/api/integrations/callback(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/integrations/callback(?:/)?$"
+    },
+    {
+      "page": "/api/integrations/connect",
+      "regex": "^/api/integrations/connect(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/integrations/connect(?:/)?$"
+    },
+    {
+      "page": "/api/integrations/disconnect",
+      "regex": "^/api/integrations/disconnect(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/integrations/disconnect(?:/)?$"
+    },
+    {
+      "page": "/api/integrations/list",
+      "regex": "^/api/integrations/list(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/integrations/list(?:/)?$"
+    },
+    {
+      "page": "/api/integrations/manual",
+      "regex": "^/api/integrations/manual(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/integrations/manual(?:/)?$"
+    },
+    {
+      "page": "/api/stripe/webhook",
+      "regex": "^/api/stripe/webhook(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/stripe/webhook(?:/)?$"
+    },
+    {
+      "page": "/api/workflows",
+      "regex": "^/api/workflows(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/workflows(?:/)?$"
+    },
+    {
+      "page": "/api/x7/admin/stats",
+      "regex": "^/api/x7/admin/stats(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/x7/admin/stats(?:/)?$"
+    },
+    {
+      "page": "/api/x7/agents",
+      "regex": "^/api/x7/agents(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/x7/agents(?:/)?$"
+    },
+    {
+      "page": "/api/x7/channels",
+      "regex": "^/api/x7/channels(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/x7/channels(?:/)?$"
+    },
+    {
+      "page": "/api/x7/chat",
+      "regex": "^/api/x7/chat(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/x7/chat(?:/)?$"
+    },
+    {
+      "page": "/api/x7/chats",
+      "regex": "^/api/x7/chats(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/x7/chats(?:/)?$"
+    },
+    {
+      "page": "/api/x7/cron",
+      "regex": "^/api/x7/cron(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/x7/cron(?:/)?$"
+    },
+    {
+      "page": "/api/x7/feedbacks",
+      "regex": "^/api/x7/feedbacks(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/x7/feedbacks(?:/)?$"
+    },
+    {
+      "page": "/api/x7/functions",
+      "regex": "^/api/x7/functions(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/x7/functions(?:/)?$"
+    },
+    {
+      "page": "/api/x7/knowledge/upload",
+      "regex": "^/api/x7/knowledge/upload(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/x7/knowledge/upload(?:/)?$"
+    },
+    {
+      "page": "/api/x7/notes",
+      "regex": "^/api/x7/notes(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/x7/notes(?:/)?$"
+    },
+    {
+      "page": "/api/x7/prompts",
+      "regex": "^/api/x7/prompts(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/x7/prompts(?:/)?$"
+    },
+    {
+      "page": "/api/x7/providers",
+      "regex": "^/api/x7/providers(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/x7/providers(?:/)?$"
+    },
+    {
+      "page": "/api/x7/skills/import-openapi",
+      "regex": "^/api/x7/skills/import\\-openapi(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/x7/skills/import\\-openapi(?:/)?$"
+    },
+    {
+      "page": "/api/x7/terminal",
+      "regex": "^/api/x7/terminal(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/x7/terminal(?:/)?$"
+    },
+    {
+      "page": "/auth/callback",
+      "regex": "^/auth/callback(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/auth/callback(?:/)?$"
+    },
+    {
+      "page": "/dashboard",
+      "regex": "^/dashboard(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard(?:/)?$"
+    },
+    {
+      "page": "/dashboard/agents",
+      "regex": "^/dashboard/agents(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/agents(?:/)?$"
+    },
+    {
+      "page": "/dashboard/integrations",
+      "regex": "^/dashboard/integrations(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/integrations(?:/)?$"
+    },
+    {
+      "page": "/dashboard/settings",
+      "regex": "^/dashboard/settings(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/settings(?:/)?$"
+    },
+    {
+      "page": "/dashboard/settings/x7-import-skills",
+      "regex": "^/dashboard/settings/x7\\-import\\-skills(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/settings/x7\\-import\\-skills(?:/)?$"
+    },
+    {
+      "page": "/dashboard/settings/x7-providers",
+      "regex": "^/dashboard/settings/x7\\-providers(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/settings/x7\\-providers(?:/)?$"
+    },
+    {
+      "page": "/dashboard/skills",
+      "regex": "^/dashboard/skills(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/skills(?:/)?$"
+    },
+    {
+      "page": "/dashboard/workflows",
+      "regex": "^/dashboard/workflows(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/workflows(?:/)?$"
+    },
+    {
+      "page": "/dashboard/x7",
+      "regex": "^/dashboard/x7(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/x7(?:/)?$"
+    },
+    {
+      "page": "/dashboard/x7/admin",
+      "regex": "^/dashboard/x7/admin(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/x7/admin(?:/)?$"
+    },
+    {
+      "page": "/dashboard/x7/channels",
+      "regex": "^/dashboard/x7/channels(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/x7/channels(?:/)?$"
+    },
+    {
+      "page": "/dashboard/x7/knowledge",
+      "regex": "^/dashboard/x7/knowledge(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/x7/knowledge(?:/)?$"
+    },
+    {
+      "page": "/dashboard/x7/memory",
+      "regex": "^/dashboard/x7/memory(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/x7/memory(?:/)?$"
+    },
+    {
+      "page": "/dashboard/x7/notes",
+      "regex": "^/dashboard/x7/notes(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/x7/notes(?:/)?$"
+    },
+    {
+      "page": "/dashboard/x7/skills",
+      "regex": "^/dashboard/x7/skills(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/x7/skills(?:/)?$"
+    },
+    {
+      "page": "/dashboard/x7/terminal",
+      "regex": "^/dashboard/x7/terminal(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/x7/terminal(?:/)?$"
+    },
+    {
+      "page": "/dashboard/x7/workspace",
+      "regex": "^/dashboard/x7/workspace(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/x7/workspace(?:/)?$"
+    },
+    {
+      "page": "/login",
+      "regex": "^/login(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/login(?:/)?$"
+    }
+  ],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "rsc",
+    "varyHeader": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+    "prefetchHeader": "next-router-prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSegmentHeader": "next-router-segment-prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments",
+    "clientParamParsing": false,
+    "dynamicRSCPrerender": false
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  }
+}

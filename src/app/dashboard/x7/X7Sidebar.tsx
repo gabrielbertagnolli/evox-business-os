@@ -1,7 +1,7 @@
 "use client";
 
 import { useX7Chats } from "@/hooks/api/useX7Chats";
-import { MessageSquare, Plus, Loader2, Folder, ChevronRight, Hash } from "lucide-react";
+import { MessageSquare, Plus, Loader2, Folder, ChevronRight, Hash, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -25,7 +25,7 @@ export default function X7Sidebar() {
         >
           <div className="flex items-center gap-2">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#2d7bff]/20 text-[#2d7bff]">
-              <SparklesIcon size={12} />
+              <Sparkles size={12} />
             </span>
             Nuevo Chat
           </div>

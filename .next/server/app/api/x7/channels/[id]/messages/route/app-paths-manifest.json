@@ -1,0 +1,3 @@
+{
+  "/api/x7/channels/[id]/messages/route": "app/api/x7/channels/[id]/messages/route.js"
+}

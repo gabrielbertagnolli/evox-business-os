@@ -1,0 +1,3 @@
+module.exports=[28581,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(57541);a.n(d("[project]/Downloads/Agencia/Dev/evox-os-repo/evox-business-os/node_modules/next/dist/client/components/builtin/global-error.js <module evaluation>"))},1359,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(57541);a.n(d("[project]/Downloads/Agencia/Dev/evox-os-repo/evox-business-os/node_modules/next/dist/client/components/builtin/global-error.js"))},29292,a=>{"use strict";a.i(28581);var b=a.i(1359);a.n(b)},55934,a=>{a.n(a.i(29292))}];
+
+//# sourceMappingURL=136j_next_dist_client_components_builtin_global-error_0322jjw.js.map
