@@ -145,10 +145,25 @@ async function generateAIAnswer(userId: string, messages: X7ChatMessage[], conte
 
     if (customAgent) {
       customSystemPrompt = customAgent.system_prompt;
+      
+      // Inject knowledge files into custom system prompt
+      if (customAgent.knowledge_files && customAgent.knowledge_files.length > 0) {
+        customSystemPrompt += "\n\n--- CONTEXTO ADICIONAL (ARCHIVOS INYECTADOS) ---\n" + 
+          customAgent.knowledge_files.map((file: any) => `Archivo: ${file.name}\n${file.content}`).join("\n\n---\n\n") + 
+          "\n---------------------------------------------------";
+      }
+
+      // Filter global skills to only include those allowed by the agent
+      if (customAgent.skills && customAgent.skills.length > 0) {
+        context.skills = context.skills.filter(s => customAgent.skills.includes(s.id));
+      } else {
+        // If agent has an empty skills array, it has NO access to skills
+        context.skills = [];
+      }
+
       provider = customAgent.provider || "openai";
       modelName = customAgent.model || "gpt-4o-mini";
     }
-  }
 
   if (provider === "openai" && settings?.openai_api_key) apiKey = settings.openai_api_key;
   else if (provider === "anthropic") apiKey = settings?.anthropic_api_key || process.env.ANTHROPIC_API_KEY;

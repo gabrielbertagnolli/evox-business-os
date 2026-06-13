@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { name, description, system_prompt, provider, model } = body;
+  const { name, description, system_prompt, provider, model, knowledge_files, skills, avatar_url } = body;
 
   if (!name || !system_prompt) {
     return NextResponse.json({ error: "Name and System Prompt are required" }, { status: 400 });
@@ -51,6 +51,9 @@ export async function POST(req: NextRequest) {
     system_prompt,
     provider: provider || "openai",
     model: model || "gpt-4o-mini",
+    knowledge_files: knowledge_files || [],
+    skills: skills || [],
+    avatar_url: avatar_url || null,
     is_active: true,
   });
 

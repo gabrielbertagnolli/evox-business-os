@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { Folder, Play, FileCode2, Plus, Sparkles, AlertCircle, Save, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 
 export default function WorkspacePage() {
   const [activeTab, setActiveTab] = useState<"agents" | "functions">("functions");
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const { data: functions, isLoading: isLoadingFunctions } = useQuery({
     queryKey: ["x7-functions"],
@@ -30,8 +32,6 @@ export default function WorkspacePage() {
   const [newFuncName, setNewFuncName] = useState("");
   const [newFuncType, setNewFuncType] = useState("filter");
   const [newFuncCode, setNewFuncCode] = useState("");
-  const [newAgentDesc, setNewAgentDesc] = useState("");
-  const [newAgentPrompt, setNewAgentPrompt] = useState("");
 
   const createFunction = useMutation({
     mutationFn: async (data: any) => {
@@ -49,22 +49,6 @@ export default function WorkspacePage() {
     }
   });
 
-  const createAgent = useMutation({
-    mutationFn: async (data: any) => {
-      const res = await fetch("/api/x7/agents", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
-      if (!res.ok) throw new Error("Error saving agent");
-      return await res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["x7-agents"] });
-      setIsModalOpen(false);
-    }
-  });
-
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     if (activeTab === "functions") {
@@ -74,12 +58,14 @@ export default function WorkspacePage() {
         content: newFuncCode,
         is_active: true
       });
+    }
+  };
+
+  const handleCreateNewClick = () => {
+    if (activeTab === "agents") {
+      router.push("/dashboard/x7/workspace/agent/new");
     } else {
-      createAgent.mutate({
-        name: newFuncName,
-        description: newAgentDesc,
-        system_prompt: newAgentPrompt,
-      });
+      setIsModalOpen(true);
     }
   };
 
@@ -92,7 +78,7 @@ export default function WorkspacePage() {
             <p className="mt-2 text-sm text-white/50">Crea modelos personalizados, filtros y pipelines para X7.</p>
           </div>
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={handleCreateNewClick}
             className="flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-medium text-black transition hover:bg-white/90"
           >
             <Plus size={16} /> Crear {activeTab === "functions" ? "Función" : "Agente"}
