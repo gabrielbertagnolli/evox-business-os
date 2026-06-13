@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Edit2, Trash2, FileText, Pin, Check, X, Save, Loader2 } from "lucide-react";
+import { Plus, Edit2, Trash2, FileText, Pin, Check, X, Save, Loader2, Sparkles } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { MarkdownRenderer } from "../components/MarkdownRenderer";
 import { toast } from "sonner";
@@ -121,6 +121,27 @@ export default function NotesWorkspacePage() {
     }
   });
 
+  const enhanceWithAI = useMutation({
+    mutationFn: async (content: string) => {
+      const res = await fetch("/api/x7/notes/enhance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content })
+      });
+      if (!res.ok) {
+        throw new Error("Error al mejorar con IA");
+      }
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      setDraftContent(data.enhancedContent);
+      toast.success("Texto mejorado con AI.");
+    },
+    onError: () => {
+      toast.error("Error al comunicarse con el modelo de AI.");
+    }
+  });
+
   const activeNote = notes?.find((n: any) => n.id === activeNoteId);
 
   const handleSave = () => {
@@ -208,7 +229,16 @@ export default function NotesWorkspacePage() {
 
                 {isEditing ? (
                   <>
-                    <button onClick={() => setIsEditing(false)} className="p-2 text-white/40 hover:bg-white/10 hover:text-white rounded-lg transition-colors">
+                    <button 
+                      onClick={() => enhanceWithAI.mutate(draftContent)} 
+                      disabled={enhanceWithAI.isPending || draftContent.trim().length === 0}
+                      className="flex items-center gap-2 px-3 py-2 bg-[#2d7bff]/20 text-[#2d7bff] hover:bg-[#2d7bff]/30 rounded-lg transition-colors font-medium text-sm disabled:opacity-50"
+                      title="Reescribir y mejorar con AI"
+                    >
+                      {enhanceWithAI.isPending ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                      <span className="hidden sm:inline">Mejorar con AI</span>
+                    </button>
+                    <button onClick={() => setIsEditing(false)} className="p-2 text-white/40 hover:bg-white/10 hover:text-white rounded-lg transition-colors ml-2">
                       <X size={18} />
                     </button>
                     <button onClick={handleSave} className="flex items-center gap-2 px-4 py-2 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 rounded-lg transition-colors font-medium text-sm">

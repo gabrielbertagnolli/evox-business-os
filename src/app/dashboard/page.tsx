@@ -10,9 +10,9 @@ async function getDashboardStats() {
 
     const [agentsRes, workflowsRes, integrationsRes, logsRes] = await Promise.all([
       supabase.from("x7_agents").select("id, name, updated_at", { count: "exact" }).eq("user_id", user.id),
-      Promise.resolve({ data: [], count: 0 }), // Mockup for now
-      Promise.resolve({ data: [], count: 0 }), // Mockup for now
-      Promise.resolve({ data: [], count: 0 }), // Mockup for now
+      Promise.resolve({ data: [] as any[], count: 0 }), // Mockup for now
+      Promise.resolve({ data: [] as any[], count: 0 }), // Mockup for now
+      Promise.resolve({ data: [] as any[], count: 0 }), // Mockup for now
     ]);
 
     return {

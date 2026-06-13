@@ -24,12 +24,31 @@ export async function GET(req: NextRequest) {
     .eq("user_id", user.id)
     .eq("is_active", true);
 
-  // Default models
-  const providers: { id: string; name: string }[] = [
-    { id: "openai:gpt-4o-mini", name: "OpenAI: GPT-4o Mini (Default)" },
-    { id: "openai:gpt-4o", name: "OpenAI: GPT-4o" },
-    { id: "anthropic:claude-3-5-sonnet-latest", name: "Anthropic: Claude 3.5 Sonnet" },
-  ];
+  // Get user settings to check for legacy keys
+  const { data: settings } = await supabase
+    .from("x7_user_settings")
+    .select("*")
+    .eq("user_id", user.id)
+    .single();
+
+  const providers: { id: string; name: string }[] = [];
+
+  // Create virtual providers if there are legacy keys or env keys and no custom provider exists for them
+  const openAiKey = settings?.openai_api_key || process.env.OPENAI_API_KEY;
+  if (openAiKey && !customProviders?.find(p => p.id === "openai" || p.base_url?.includes("openai.com"))) {
+    customProviders?.push({
+      id: "openai_virtual",
+      name: "OpenAI (Virtual)",
+      base_url: "https://api.openai.com/v1",
+      api_key: openAiKey
+    });
+  }
+
+  const anthropicKey = settings?.anthropic_api_key || process.env.ANTHROPIC_API_KEY;
+  if (anthropicKey && !customProviders?.find(p => p.id === "anthropic" || p.base_url?.includes("anthropic.com"))) {
+    // Note: Anthropic doesn't exactly match the /v1/models OpenAI spec usually, but we assume it's proxy-wrapped or we manually add it.
+    providers.push({ id: "anthropic_virtual:claude-3-5-sonnet-latest", name: "Anthropic: Claude 3.5 Sonnet" });
+  }
 
   // Fetch models for each custom provider concurrently with a timeout
   if (customProviders && customProviders.length > 0) {

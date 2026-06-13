@@ -35,6 +35,15 @@ export async function GET(req: NextRequest) {
       vectorDbOk = false;
     }
 
+    // Providers Check
+    let hasProviders = false;
+    try {
+      const { data: providersList } = await supabase.from("x7_llm_providers").select("id").limit(1);
+      if (providersList && providersList.length > 0) hasProviders = true;
+    } catch {
+      hasProviders = false;
+    }
+
     // Piston Check
     let pistonOk = true;
     try {
@@ -53,7 +62,7 @@ export async function GET(req: NextRequest) {
       estimatedTokens,
       estimatedCost: (estimatedTokens / 1000) * 0.002, // Assuming $0.002 per 1k tokens average
       health: {
-        modelApi: process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.GEMINI_API_KEY ? "Operativo" : "Faltan API Keys",
+        modelApi: hasProviders || process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY ? "Operativo" : "Faltan Proveedores",
         vectorDb: vectorDbOk ? "Operativo" : "Error de Conexión",
         piston: pistonOk ? "Conectado (Piston)" : "Desconectado"
       }

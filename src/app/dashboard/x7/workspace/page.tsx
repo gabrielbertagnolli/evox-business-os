@@ -156,7 +156,7 @@ export default function WorkspacePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <form onSubmit={handleCreate} className="w-full max-w-2xl rounded-[28px] p-6 shadow-2xl flex flex-col max-h-[90vh]" style={{ background: "#14151a", border: "1px solid rgba(255,255,255,0.1)" }}>
             <div className="flex justify-between items-center mb-6 shrink-0">
-              <h2 className="text-xl font-semibold text-white">{activeTab === "functions" ? "Nueva Función JS (Middleware)" : "Nuevo Agente (Modelfile)"}</h2>
+              <h2 className="text-xl font-semibold text-white">Nueva Función JS (Middleware)</h2>
               <button type="button" onClick={() => setIsModalOpen(false)} className="text-white/40 hover:text-white"><X size={20}/></button>
             </div>
             
@@ -168,13 +168,12 @@ export default function WorkspacePage() {
                     type="text"
                     value={newFuncName}
                     onChange={(e) => setNewFuncName(e.target.value)}
-                    placeholder={activeTab === "functions" ? "ej. censura-pci" : "ej. Agente de Ventas"}
+                    placeholder="ej. censura-pci"
                     className="w-full rounded-xl px-4 py-3 text-sm text-white outline-none"
                     style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
                     required
                   />
                 </div>
-                {activeTab === "functions" ? (
                   <div>
                     <label className="mb-2 block text-xs font-medium text-white/60">Tipo</label>
                     <select
@@ -187,27 +186,13 @@ export default function WorkspacePage() {
                       <option value="pipe" className="bg-[#14151a]">Pipe (Action)</option>
                     </select>
                   </div>
-                ) : (
-                  <div>
-                    <label className="mb-2 block text-xs font-medium text-white/60">Descripción (Opcional)</label>
-                    <input
-                      type="text"
-                      value={newAgentDesc}
-                      onChange={(e) => setNewAgentDesc(e.target.value)}
-                      placeholder="Experto en cierre de ventas"
-                      className="w-full rounded-xl px-4 py-3 text-sm text-white outline-none"
-                      style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
-                    />
-                  </div>
-                )}
               </div>
               
               <div>
-                <label className="mb-2 block text-xs font-medium text-white/60">{activeTab === "functions" ? "Código Javascript" : "System Prompt"}</label>
+                <label className="mb-2 block text-xs font-medium text-white/60">Código Javascript</label>
                 <div className="bg-[#0a0b0e] rounded-xl border border-white/10 p-4">
-                  {activeTab === "functions" && (
-                    <p className="text-xs text-white/30 mb-3 font-mono">
-                      {`// Ejemplo de Filtro
+                  <p className="text-xs text-white/30 mb-3 font-mono">
+                    {`// Ejemplo de Filtro
 function filter(messages) {
   // modificar messages
   return messages;
@@ -216,13 +201,12 @@ function filter(messages) {
 function postFilter(answer) {
   return answer + "\\n\\n[Filtrado por X7]";
 }`}
-                    </p>
-                  )}
+                  </p>
                   <textarea
-                    value={activeTab === "functions" ? newFuncCode : newAgentPrompt}
-                    onChange={(e) => activeTab === "functions" ? setNewFuncCode(e.target.value) : setNewAgentPrompt(e.target.value)}
-                    placeholder={activeTab === "functions" ? "Escribe tu código JS aquí..." : "Eres un agente experto en..."}
-                    className={`w-full min-h-[200px] bg-transparent text-sm outline-none resize-y ${activeTab === "functions" ? "text-emerald-400 font-mono" : "text-white"}`}
+                    value={newFuncCode}
+                    onChange={(e) => setNewFuncCode(e.target.value)}
+                    placeholder="Escribe tu código JS aquí..."
+                    className="w-full min-h-[200px] bg-transparent text-sm outline-none resize-y text-emerald-400 font-mono"
                     required
                   />
                 </div>
@@ -232,11 +216,11 @@ function postFilter(answer) {
             <div className="mt-6 flex justify-end gap-3 shrink-0">
               <button
                 type="submit"
-                disabled={activeTab === "functions" ? createFunction.isPending : createAgent.isPending}
+                disabled={createFunction.isPending}
                 className="flex items-center gap-2 rounded-xl bg-white px-6 py-2.5 text-sm font-medium text-black transition hover:bg-white/90 disabled:opacity-50"
               >
                 <Save size={16} />
-                {activeTab === "functions" ? "Guardar Función" : "Guardar Agente"}
+                Guardar Función
               </button>
             </div>
           </form>

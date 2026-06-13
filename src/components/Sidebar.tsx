@@ -12,11 +12,13 @@ import {
   Plug,
   Settings,
   LogOut,
+  Cpu,
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/agents", label: "Agents", icon: Bot },
+  { href: "/dashboard/control-plane", label: "Control Plane", icon: Cpu },
+  { href: "/dashboard/agents", label: "Lions", icon: Bot },
   { href: "/dashboard/x7", label: "X7", icon: MessageCircle },
   { href: "/dashboard/x7/skills", label: "Skills", icon: Zap },
   { href: "/dashboard/workflows", label: "Workflows", icon: GitBranch },

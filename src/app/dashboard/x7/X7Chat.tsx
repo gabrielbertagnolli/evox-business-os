@@ -242,8 +242,28 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
   const canSubmit = (input.trim() !== "" || attachedFile !== null) && !chatMutation.isPending;
 
   async function submitPrompt(prompt: string, parentId?: string) {
-    // Append attached file content to prompt if exists
     let finalPrompt = prompt.trim();
+    let targetModel = selectedModel;
+
+    // Detect @mentions (e.g. "@AsistenteLegal redacta esto")
+    const mentionRegex = /^@([a-zA-Z0-9_-]+)\s+([\s\S]*)/;
+    const match = finalPrompt.match(mentionRegex);
+    if (match && providers) {
+      const mentionTag = match[1].toLowerCase();
+      // Find agent/provider by name (without spaces) or ID
+      const taggedAgent = providers.find((p: any) => 
+        p.id === match[1] || 
+        (p.name && p.name.toLowerCase().replace(/\s+/g, '') === mentionTag)
+      );
+      
+      if (taggedAgent) {
+        targetModel = taggedAgent.id;
+        finalPrompt = match[2];
+        toast.success(`Mensaje dirigido a: ${taggedAgent.name}`);
+      }
+    }
+
+    // Append attached file content to prompt if exists
     if (attachedFile) {
       finalPrompt += `\n\n[ARCHIVO ADJUNTO: ${attachedFile.name}]\n${attachedFile.content}\n[/ARCHIVO]`;
     }
@@ -271,7 +291,7 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
         chatId: chatId,
         parentId: effectiveParentId !== "x7-welcome" ? effectiveParentId : undefined,
         webSearch: webSearchEnabled,
-        model: selectedModel
+        model: targetModel
       });
 
       // Secondary model request if enabled
