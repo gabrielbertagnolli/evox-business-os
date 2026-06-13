@@ -34,9 +34,12 @@ export default function X7Sidebar() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-2">
-        <div className="mb-4">
-          <Link href="/dashboard/x7/channels" className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-white/60 transition-colors hover:bg-white/5 hover:text-white">
+        <div className="mb-4 space-y-1">
+          <Link href="/dashboard/x7/channels" className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors ${pathname.startsWith("/dashboard/x7/channels") ? "bg-white/10 text-white font-medium" : "text-white/60 hover:bg-white/5 hover:text-white"}`}>
             <Hash size={16} /> Canales Colaborativos
+          </Link>
+          <Link href="/dashboard/x7/notes" className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors ${pathname.startsWith("/dashboard/x7/notes") ? "bg-white/10 text-white font-medium" : "text-white/60 hover:bg-white/5 hover:text-white"}`}>
+            <Folder size={16} /> Workspace de Notas
           </Link>
         </div>
 
