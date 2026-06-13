@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable react-hooks/set-state-in-effect, no-restricted-syntax, react/jsx-max-depth */
 
-import { Bot, DatabaseZap, Loader2, Send, ShieldCheck, Sparkles, Zap, Edit2, RotateCw, ThumbsUp, ThumbsDown, Globe, Paperclip, ChevronDown, Mic } from "lucide-react";
+import { Bot, DatabaseZap, Loader2, Send, ShieldCheck, Sparkles, Zap, Edit2, RotateCw, ThumbsUp, ThumbsDown, Globe, Paperclip, ChevronDown, Mic, Check, X } from "lucide-react";
 import { useMemo, useState, useEffect, useRef, type FormEvent } from "react";
 import { useX7Chat, useX7ChatDetail, type X7Message, type X7Summary } from "@/hooks/api/useX7Chat";
 import { useRouter } from "next/navigation";
@@ -53,13 +53,27 @@ function SummaryCard({ label, value, detail }: { label: string; value: string | 
   );
 }
 
-function MessageBubble({ message, onRegenerate, onFeedback }: { message: X7Message, onRegenerate?: () => void, onFeedback?: (rating: number) => void }) {
+function MessageBubble({ message, onRegenerate, onFeedback, onEdit }: { message: X7Message, onRegenerate?: () => void, onFeedback?: (rating: number) => void, onEdit?: (newContent: string) => void }) {
   const isUser = message.role === "user";
   const [feedback, setFeedback] = useState<number | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState(message.content);
 
   const handleFeedback = (rating: number) => {
     setFeedback(rating);
     if (onFeedback) onFeedback(rating);
+  };
+
+  const handleConfirmEdit = () => {
+    if (editText.trim() && onEdit) {
+      onEdit(editText.trim());
+    }
+    setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditText(message.content);
+    setIsEditing(false);
   };
 
   return (
@@ -68,7 +82,7 @@ function MessageBubble({ message, onRegenerate, onFeedback }: { message: X7Messa
         className={`max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-6 ${isUser ? "text-white" : "text-white/75"}`}
         style={{
           background: isUser ? "rgba(45,123,255,0.2)" : "rgba(255,255,255,0.045)",
-          border: isUser ? "1px solid rgba(45,123,255,0.32)" : "1px solid rgba(255,255,255,0.08)",
+          border: isUser ? (isEditing ? "1px solid rgba(45,123,255,0.6)" : "1px solid rgba(45,123,255,0.32)") : "1px solid rgba(255,255,255,0.08)",
           boxShadow: isUser ? "0 0 28px rgba(45,123,255,0.08)" : "none",
         }}
       >
@@ -77,7 +91,21 @@ function MessageBubble({ message, onRegenerate, onFeedback }: { message: X7Messa
             <Sparkles size={12} /> X7
           </div>
         )}
-        {isUser ? (
+        {isUser && isEditing ? (
+          <textarea
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            className="w-full min-h-[60px] bg-transparent text-white outline-none resize-none"
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleConfirmEdit();
+              }
+              if (e.key === "Escape") handleCancelEdit();
+            }}
+          />
+        ) : isUser ? (
           <p className="whitespace-pre-wrap">{message.content}</p>
         ) : (
           <MarkdownRenderer content={message.content} />
@@ -86,11 +114,22 @@ function MessageBubble({ message, onRegenerate, onFeedback }: { message: X7Messa
 
       {/* Acciones de Mensaje */}
       {message.id !== "x7-welcome" && (
-        <div className={`mt-1 flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
+        <div className={`mt-1 flex items-center gap-2 ${isEditing ? "opacity-100" : "opacity-0 transition-opacity group-hover:opacity-100"} ${isUser ? "flex-row-reverse" : "flex-row"}`}>
           {isUser ? (
-            <button className="flex h-6 w-6 items-center justify-center rounded-full bg-white/5 text-white/40 hover:bg-white/10 hover:text-white" title="Editar y bifurcar">
-              <Edit2 size={12} />
-            </button>
+            isEditing ? (
+              <>
+                <button onClick={handleConfirmEdit} className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30" title="Confirmar edición">
+                  <Check size={12} />
+                </button>
+                <button onClick={handleCancelEdit} className="flex h-6 w-6 items-center justify-center rounded-full bg-white/5 text-white/40 hover:bg-red-500/20 hover:text-red-400" title="Cancelar">
+                  <X size={12} />
+                </button>
+              </>
+            ) : (
+              <button onClick={() => setIsEditing(true)} className="flex h-6 w-6 items-center justify-center rounded-full bg-white/5 text-white/40 hover:bg-white/10 hover:text-white" title="Editar y bifurcar">
+                <Edit2 size={12} />
+              </button>
+            )
           ) : (
             <>
               <button onClick={onRegenerate} className="flex h-6 w-6 items-center justify-center rounded-full bg-white/5 text-white/40 hover:bg-white/10 hover:text-white" title="Regenerar respuesta">
@@ -287,7 +326,20 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
     const messageIndex = messages.findIndex(m => m.id === messageId);
     if (messageIndex > 0) {
       const parentUserMessage = messages[messageIndex - 1];
+      // Trim history to the point before this response and resubmit
+      const trimmedMessages = messages.slice(0, messageIndex - 1);
+      setMessages([...trimmedMessages]);
       submitPrompt(parentUserMessage.content);
+    }
+  }
+
+  function handleEditAndFork(messageId: string, newContent: string) {
+    const messageIndex = messages.findIndex(m => m.id === messageId);
+    if (messageIndex >= 0) {
+      // Fork: trim conversation to just before this message and resubmit with new content
+      const trimmedMessages = messages.slice(0, messageIndex);
+      setMessages([...trimmedMessages]);
+      submitPrompt(newContent);
     }
   }
 
@@ -379,6 +431,7 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
                 message={message} 
                 onRegenerate={() => handleRegenerate(message.id)}
                 onFeedback={(rating) => handleFeedback(message.id, rating)}
+                onEdit={message.role === "user" ? (newContent) => handleEditAndFork(message.id, newContent) : undefined}
               />
             ))}
             {chatMutation.isPending && (
@@ -443,11 +496,25 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
             )}
             
             {input.startsWith("/") && (
-              <div className="absolute bottom-full left-0 mb-2 w-64 rounded-xl bg-[#14151a] p-2 shadow-xl border border-white/10 z-10">
-                <p className="text-xs font-semibold text-white/40 mb-2 px-2 uppercase tracking-wider">Comandos (Prompts)</p>
+              <div className="absolute bottom-full left-0 mb-2 w-72 rounded-xl bg-[#14151a] p-2 shadow-xl border border-white/10 z-10">
+                <p className="text-xs font-semibold text-white/40 mb-2 px-2 uppercase tracking-wider">Comandos Rápidos</p>
                 <div className="space-y-1">
-                  <button type="button" className="w-full text-left rounded-lg px-2 py-1.5 text-sm text-white/70 hover:bg-white/10 hover:text-white">/experto_ventas</button>
-                  <button type="button" className="w-full text-left rounded-lg px-2 py-1.5 text-sm text-white/70 hover:bg-white/10 hover:text-white">/analizar_datos</button>
+                  {[
+                    { cmd: "/experto_ventas", prompt: "Actúa como un experto en ventas consultivas B2B. Analiza mi pipeline actual y dame recomendaciones accionables para mejorar la tasa de conversión." },
+                    { cmd: "/analizar_datos", prompt: "Analiza los datos disponibles de mis integraciones conectadas. Identifica tendencias, anomalías y genera un resumen ejecutivo con métricas clave." },
+                    { cmd: "/reporte_semanal", prompt: "Genera un reporte semanal completo con el estado de agentes, workflows, integraciones y métricas relevantes del negocio." },
+                    { cmd: "/optimizar_workflow", prompt: "Revisa mis workflows activos y sugiere optimizaciones, automatizaciones adicionales o pasos que puedan eliminarse." },
+                  ].filter(c => c.cmd.startsWith(input)).map(({ cmd, prompt }) => (
+                    <button
+                      key={cmd}
+                      type="button"
+                      onClick={() => { setInput(prompt); }}
+                      className="w-full text-left rounded-lg px-3 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+                    >
+                      <span className="font-medium text-[#2d7bff]">{cmd}</span>
+                      <p className="text-[11px] text-white/30 mt-0.5 line-clamp-1">{prompt.substring(0, 60)}…</p>
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
