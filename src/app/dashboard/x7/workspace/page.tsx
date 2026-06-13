@@ -152,6 +152,9 @@ export default function WorkspacePage() {
               <div key={agent.id} className="rounded-2xl p-5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-semibold text-white">{agent.name}</h3>
+                  <a href={`/dashboard/x7?agent=${agent.id}`} className="flex items-center gap-1.5 rounded-lg bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-400 transition hover:bg-emerald-500/20">
+                    <Play size={12} /> Run
+                  </a>
                 </div>
                 <p className="text-xs text-white/60 mb-3">{agent.description || "Sin descripción"}</p>
                 <div className="rounded-xl bg-black/50 p-3 font-mono text-xs text-white/40 overflow-hidden h-24">

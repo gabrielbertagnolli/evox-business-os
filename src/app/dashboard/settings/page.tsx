@@ -13,7 +13,7 @@ export default async function SettingsPage() {
   // Get current settings (fallback if not created/updated in db yet)
   const { data: profile } = await supabase
     .from("user_profiles")
-    .select("workspace_name, timezone, language, whatsapp_alerts, email_digests")
+    .select("workspace_name, timezone, language, whatsapp_alerts, email_digests, credit_balance_usd")
     .eq("user_id", user.id)
     .single();
 
@@ -22,6 +22,7 @@ export default async function SettingsPage() {
   const language = profile?.language ?? "es";
   const whatsappAlerts = profile?.whatsapp_alerts ?? false;
   const emailDigests = profile?.email_digests ?? false;
+  const creditBalance = profile?.credit_balance_usd ?? 0;
 
   return (
     <form action={updateWorkspaceSettings} className="mx-auto max-w-3xl px-8 py-10 space-y-6">
@@ -114,22 +115,24 @@ export default async function SettingsPage() {
             Notifications
           </h2>
           <div className="space-y-3">
-            <label className="flex items-center justify-between rounded-xl px-3 py-2 transition hover:bg-white/5 cursor-pointer">
-              <span className="text-sm text-white/60">WhatsApp alerts</span>
+            <label className="flex items-center justify-between rounded-xl px-3 py-2 transition hover:bg-white/5 opacity-50 cursor-not-allowed">
+              <span className="text-sm text-white/60">WhatsApp alerts <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white/40 ml-2">Próximamente</span></span>
               <input
                 type="checkbox"
                 name="whatsappAlerts"
+                disabled
                 defaultChecked={whatsappAlerts}
-                className="rounded border-white/10 bg-white/5 text-[#2d7bff] outline-none"
+                className="rounded border-white/10 bg-white/5 text-[#2d7bff] outline-none cursor-not-allowed"
               />
             </label>
-            <label className="flex items-center justify-between rounded-xl px-3 py-2 transition hover:bg-white/5 cursor-pointer">
-              <span className="text-sm text-white/60">Email digests</span>
+            <label className="flex items-center justify-between rounded-xl px-3 py-2 transition hover:bg-white/5 opacity-50 cursor-not-allowed">
+              <span className="text-sm text-white/60">Email digests <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white/40 ml-2">Próximamente</span></span>
               <input
                 type="checkbox"
                 name="emailDigests"
+                disabled
                 defaultChecked={emailDigests}
-                className="rounded border-white/10 bg-white/5 text-[#2d7bff] outline-none"
+                className="rounded border-white/10 bg-white/5 text-[#2d7bff] outline-none cursor-not-allowed"
               />
             </label>
           </div>
@@ -147,7 +150,7 @@ export default async function SettingsPage() {
             </div>
             <div className="flex items-center justify-between rounded-xl px-3 py-3 text-sm text-white/60">
               <span>Credits</span>
-              <span className="text-xs text-white/45">$1.00 USD remaining</span>
+              <span className="text-xs text-white/45">${creditBalance.toFixed(4)} USD remaining</span>
             </div>
           </div>
         </div>

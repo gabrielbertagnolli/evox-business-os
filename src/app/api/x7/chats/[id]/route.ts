@@ -14,6 +14,7 @@ function buildChatHistory(messages: any[]) {
       role: msg.role,
       content: msg.content,
       model: msg.model,
+      feedback: msg.feedback,
       timestamp: new Date(msg.created_at).getTime() / 1000,
     };
     if (!latestMsg || new Date(msg.created_at) > new Date(latestMsg.created_at)) {
@@ -61,7 +62,23 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: messagesError.message }, { status: 500 });
   }
 
-  const history = buildChatHistory(messages || []);
+  // 3. Get Feedbacks for these messages
+  const { data: feedbacks } = await supabase
+    .from("x7_feedbacks")
+    .select("message_id, rating")
+    .eq("chat_id", id);
+
+  const feedbackMap = new Map();
+  if (feedbacks) {
+    feedbacks.forEach(f => feedbackMap.set(f.message_id, f.rating));
+  }
+
+  const messagesWithFeedback = (messages || []).map(msg => ({
+    ...msg,
+    feedback: feedbackMap.get(msg.id) || null
+  }));
+
+  const history = buildChatHistory(messagesWithFeedback);
 
   const responsePayload = {
     id: chat.id,

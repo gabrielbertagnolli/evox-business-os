@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { UploadCloud, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export function KBUploader({ kbId }: { kbId: string }) {
   const [isUploading, setIsUploading] = useState(false);
@@ -24,9 +25,10 @@ export function KBUploader({ kbId }: { kbId: string }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      alert(`Success! Processed ${data.chunksProcessed} chunks from ${data.filename}.`);
+      toast.success(`Success! Processed ${data.chunksProcessed} chunks from ${data.filename}.`);
     } catch (err: any) {
       setError(err.message);
+      toast.error(err.message);
     } finally {
       setIsUploading(false);
       e.target.value = ""; // Reset input

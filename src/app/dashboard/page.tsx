@@ -9,20 +9,20 @@ async function getDashboardStats() {
     if (!user) return null;
 
     const [agentsRes, workflowsRes, integrationsRes, logsRes] = await Promise.all([
-      supabase.from("agents").select("id, name, status, last_run_at", { count: "exact" }).eq("user_id", user.id),
-      supabase.from("workflows").select("id, name, status, last_run_at", { count: "exact" }).eq("user_id", user.id),
-      supabase.from("integrations").select("id, provider, provider_account_name", { count: "exact" }).eq("user_id", user.id),
-      supabase.from("run_logs").select("id, source_name, status, started_at, source_type").eq("user_id", user.id).order("started_at", { ascending: false }).limit(5),
+      supabase.from("x7_agents").select("id, name, updated_at", { count: "exact" }).eq("user_id", user.id),
+      Promise.resolve({ data: [], count: 0 }), // Mockup for now
+      Promise.resolve({ data: [], count: 0 }), // Mockup for now
+      Promise.resolve({ data: [], count: 0 }), // Mockup for now
     ]);
 
     return {
       agents: agentsRes.data ?? [],
       agentCount: agentsRes.count ?? 0,
-      activeAgents: (agentsRes.data ?? []).filter((a) => a.status === "active").length,
-      workflows: workflowsRes.data ?? [],
-      workflowCount: workflowsRes.count ?? 0,
-      activeWorkflows: (workflowsRes.data ?? []).filter((w) => w.status === "active").length,
-      integrations: integrationsRes.data ?? [],
+      activeAgents: agentsRes.count ?? 0, // All agents are "active" in x7_agents for now
+      workflows: [],
+      workflowCount: 0,
+      activeWorkflows: 0,
+      integrations: [],
       integrationCount: integrationsRes.count ?? 0,
       recentLogs: logsRes.data ?? [],
     };
@@ -100,68 +100,29 @@ export default async function DashboardPage() {
           icon={Plug}
           label="Integrations"
           value={integrationCount}
-          sub={integrationCount === 0 ? "Connect your first tool" : `${integrationCount} connected`}
+          sub="Próximamente"
           href="/dashboard/integrations"
           color="#2d7bff"
         />
         <StatCard
           icon={Bot}
-          label="Agents"
+          label="Agentes X7"
           value={agentCount}
-          sub={agentCount === 0 ? "No agents yet" : `${activeAgents} active`}
-          href="/dashboard/agents"
-          color="#8b5cf6"
+          sub={`${activeAgents} creados`}
+          href="/dashboard/x7/workspace"
+          color="#34d399"
         />
         <StatCard
           icon={GitBranch}
           label="Workflows"
           value={workflowCount}
-          sub={workflowCount === 0 ? "No workflows yet" : `${activeWorkflows} active`}
+          sub={workflowCount === 0 ? "Próximamente" : `${activeWorkflows} active`}
           href="/dashboard/workflows"
           color="#06b6d4"
         />
       </div>
 
-      {/* Getting started checklist if empty */}
-      {integrationCount === 0 && agentCount === 0 && (
-        <div
-          className="mb-10 rounded-2xl p-6"
-          style={{
-            background: "rgba(45,123,255,0.05)",
-            border: "1px solid rgba(45,123,255,0.15)",
-          }}
-        >
-          <p className="mb-4 text-sm font-semibold text-white/70">Get started</p>
-          <div className="space-y-3">
-            {[
-              { step: "1", label: "Connect an integration", href: "/dashboard/integrations", done: integrationCount > 0 },
-              { step: "2", label: "Create your first agent", href: "/dashboard/agents", done: agentCount > 0 },
-              { step: "3", label: "Build a workflow", href: "/dashboard/workflows", done: workflowCount > 0 },
-            ].map(({ step, label, href, done }) => (
-              <Link
-                key={step}
-                href={href}
-                className="flex items-center gap-3 rounded-xl px-4 py-3 transition hover:bg-white/5"
-              >
-                <div
-                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
-                  style={{
-                    background: done ? "rgba(34,197,94,0.15)" : "rgba(45,123,255,0.15)",
-                    border: `1px solid ${done ? "rgba(34,197,94,0.3)" : "rgba(45,123,255,0.3)"}`,
-                    color: done ? "#22c55e" : "#2d7bff",
-                  }}
-                >
-                  {done ? "✓" : step}
-                </div>
-                <span className={`text-sm ${done ? "text-white/30 line-through" : "text-white/70"}`}>
-                  {label}
-                </span>
-                {!done && <ArrowRight size={12} className="ml-auto text-white/20" />}
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
+
 
       {/* Recent activity */}
       {stats?.recentLogs && stats.recentLogs.length > 0 && (
@@ -225,7 +186,7 @@ export default async function DashboardPage() {
       )}
 
       {/* Empty recent activity */}
-      {(!stats?.recentLogs || stats.recentLogs.length === 0) && agentCount > 0 && (
+      {(!stats?.recentLogs || stats.recentLogs.length === 0) && (
         <div
           className="rounded-2xl px-6 py-8 text-center"
           style={{
@@ -234,7 +195,8 @@ export default async function DashboardPage() {
           }}
         >
           <Activity size={20} className="mx-auto mb-3 text-white/15" />
-          <p className="text-sm text-white/30">No runs yet — activate an agent to start.</p>
+          <p className="text-sm font-medium text-white/80">Próximamente</p>
+          <p className="text-xs text-white/30">Aquí aparecerán los logs de ejecución de tus automatizaciones.</p>
         </div>
       )}
     </div>

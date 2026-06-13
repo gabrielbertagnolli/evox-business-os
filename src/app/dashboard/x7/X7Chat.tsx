@@ -7,6 +7,7 @@ import { useX7Chat, useX7ChatDetail, type X7Message, type X7Summary } from "@/ho
 import { useRouter } from "next/navigation";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { MarkdownRenderer } from "./components/MarkdownRenderer";
+import { toast } from "sonner";
 
 const INITIAL_SUMMARY: X7Summary = {
   connectedSources: 0,
@@ -55,7 +56,7 @@ function SummaryCard({ label, value, detail }: { label: string; value: string | 
 
 function MessageBubble({ message, onRegenerate, onFeedback, onEdit }: { message: X7Message, onRegenerate?: () => void, onFeedback?: (rating: number) => void, onEdit?: (newContent: string) => void }) {
   const isUser = message.role === "user";
-  const [feedback, setFeedback] = useState<number | null>(null);
+  const [feedback, setFeedback] = useState<number | null>(message.feedback || null);
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(message.content);
 
@@ -157,6 +158,7 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
   const [input, setInput] = useState("");
   const [summary, setSummary] = useState<X7Summary>(INITIAL_SUMMARY);
   const chatMutation = useX7Chat();
+  const secondaryChatMutation = useX7Chat();
 
   const [webSearchEnabled, setWebSearchEnabled] = useState(false);
   const [selectedModel, setSelectedModel] = useState("openai:gpt-4o-mini");
@@ -179,14 +181,16 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
   });
 
   useEffect(() => {
-    if (chatDetail && chatDetail.x7_messages?.length > 0) {
-      const sortedMessages = chatDetail.x7_messages
-        .sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+    if (chatDetail && chatDetail.chat?.history?.messages) {
+      const msgsDict = chatDetail.chat.history.messages;
+      const sortedMessages = Object.values(msgsDict)
+        .sort((a: any, b: any) => a.timestamp - b.timestamp)
         .map((m: any) => ({
           id: m.id,
           role: m.role,
           content: m.content,
-          createdAt: m.created_at
+          createdAt: new Date(m.timestamp * 1000).toISOString(),
+          feedback: m.feedback
         }));
       setMessages(sortedMessages);
       setSecondaryMessages(sortedMessages); // Seed secondary with history as well
@@ -210,7 +214,7 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
     
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert("Tu navegador no soporta entrada por voz.");
+      toast.error("Tu navegador no soporta entrada por voz.");
       return;
     }
     
@@ -273,7 +277,7 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
       // Secondary model request if enabled
       let secondaryRequest = null;
       if (secondaryModel) {
-        secondaryRequest = chatMutation.mutateAsync({
+        secondaryRequest = secondaryChatMutation.mutateAsync({
           messages: nextSecondaryMessages,
           chatId: chatId,
           parentId: effectiveParentId !== "x7-welcome" ? effectiveParentId : undefined,
@@ -457,11 +461,16 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
                   message={message} 
                 />
               ))}
-              {chatMutation.isPending && (
+              {secondaryChatMutation.isPending && (
                 <div className="flex justify-start">
                   <div className="flex items-center gap-2 rounded-2xl px-4 py-3 text-sm text-white/45" style={{ background: "rgba(255,255,255,0.045)", border: "1px solid rgba(255,255,255,0.08)" }}>
                     <Loader2 size={14} className="animate-spin text-purple-400" /> {providers?.find((p: any) => p.id === secondaryModel)?.name} está procesando...
                   </div>
+                </div>
+              )}
+              {secondaryChatMutation.isError && (
+                <div className="rounded-2xl px-4 py-3 text-sm text-red-300" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.18)" }}>
+                  {secondaryChatMutation.error instanceof Error ? secondaryChatMutation.error.message : "Error contactando al modelo secundario."}
                 </div>
               )}
             </div>

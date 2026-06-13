@@ -26,13 +26,37 @@ export async function GET(req: NextRequest) {
         estimatedTokens = messages.reduce((acc, m) => acc + Math.ceil(m.content.length / 4), 0); // Rough 1 token = 4 chars estimate
     }
 
+    // Vector DB Check
+    let vectorDbOk = true;
+    try {
+      const { error } = await supabase.from("x7_agents").select("id").limit(1); // just a simple table check since we know it exists
+      if (error) vectorDbOk = false;
+    } catch {
+      vectorDbOk = false;
+    }
+
+    // Piston Check
+    let pistonOk = true;
+    try {
+      // Just check if we can reach piston
+      const pRes = await fetch("https://emkc.org/api/v2/piston/runtimes", { method: "HEAD", next: { revalidate: 60 } });
+      if (!pRes.ok) pistonOk = false;
+    } catch {
+      pistonOk = false;
+    }
+
     return NextResponse.json({
       totalUsers: usersCount || 1,
       totalChats: chatsCount || 0,
       totalMessages: messagesCount || 0,
       totalAgents: agentsCount || 0,
       estimatedTokens,
-      estimatedCost: (estimatedTokens / 1000) * 0.002 // Assuming $0.002 per 1k tokens average
+      estimatedCost: (estimatedTokens / 1000) * 0.002, // Assuming $0.002 per 1k tokens average
+      health: {
+        modelApi: process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.GEMINI_API_KEY ? "Operativo" : "Faltan API Keys",
+        vectorDb: vectorDbOk ? "Operativo" : "Error de Conexión",
+        piston: pistonOk ? "Conectado (Piston)" : "Desconectado"
+      }
     });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

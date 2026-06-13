@@ -57,24 +57,24 @@ export default function AdminDashboard() {
           <div className="space-y-4">
             <div className="flex items-center justify-between p-4 rounded-xl bg-white/5">
               <div className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                <div className={`w-2 h-2 rounded-full ${stats?.health?.modelApi === "Operativo" ? "bg-emerald-500" : "bg-amber-500"}`}></div>
                 <p className="text-sm text-white/80">API de Modelos</p>
               </div>
-              <p className="text-xs text-white/40">Operativo</p>
+              <p className="text-xs text-white/40">{stats?.health?.modelApi || "Comprobando..."}</p>
             </div>
             <div className="flex items-center justify-between p-4 rounded-xl bg-white/5">
               <div className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                <div className={`w-2 h-2 rounded-full ${stats?.health?.vectorDb === "Operativo" ? "bg-emerald-500" : "bg-red-500"}`}></div>
                 <p className="text-sm text-white/80">Vector Database (pgvector)</p>
               </div>
-              <p className="text-xs text-white/40">Operativo</p>
+              <p className="text-xs text-white/40">{stats?.health?.vectorDb || "Comprobando..."}</p>
             </div>
             <div className="flex items-center justify-between p-4 rounded-xl bg-white/5">
               <div className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                <div className={`w-2 h-2 rounded-full ${stats?.health?.piston === "Conectado (Piston)" ? "bg-emerald-500" : "bg-red-500"}`}></div>
                 <p className="text-sm text-white/80">Sandboxing Terminal</p>
               </div>
-              <p className="text-xs text-white/40">Conectado (Piston)</p>
+              <p className="text-xs text-white/40">{stats?.health?.piston || "Comprobando..."}</p>
             </div>
           </div>
         </div>
