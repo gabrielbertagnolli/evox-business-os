@@ -188,7 +188,7 @@ export default async function X7ProvidersPage() {
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-medium text-white/60">Base URL</label>
-              <input type="url" name="baseUrl" required placeholder="http://localhost:11434/v1" className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none" />
+              <input type="url" name="baseUrl" required placeholder="http://mi-ollama-local:11434/v1" className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none" />
             </div>
           </div>
           <div>

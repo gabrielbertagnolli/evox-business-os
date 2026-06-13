@@ -116,7 +116,7 @@ try {
     return NextResponse.json({ 
       success: true, 
       imported: skillsToInsert.length,
-      message: \`Successfully imported \${skillsToInsert.length} skills from OpenAPI specs.\` 
+      message: `Successfully imported ${skillsToInsert.length} skills from OpenAPI specs.` 
     });
 
   } catch (error: any) {

@@ -29,6 +29,25 @@ BEGIN
             true
         ) ON CONFLICT DO NOTHING;
 
+        -- 1.5 Brave Search Tool
+        INSERT INTO public.x7_skills (user_id, name, description, code_payload, is_active)
+        VALUES (
+            user_rec.id,
+            'brave_search',
+            'Realiza una búsqueda avanzada en la web usando Brave Search. Útil para obtener resultados de búsqueda más ricos y precisos (requiere API Key).',
+            '{
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "query": { "type": "string", "description": "Lo que deseas buscar en internet" }
+    },
+    "required": ["query"]
+  },
+  "code": "try { const apiKey = process.env.BRAVE_API_KEY || ''TU_API_KEY_AQUI''; const response = await fetch(`https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(args.query)}`, { headers: { ''Accept'': ''application/json'', ''X-Subscription-Token'': apiKey } }); const data = await response.json(); if (!data.web || !data.web.results) return ''Sin resultados en Brave.''; return data.web.results.map(r => r.title + '': '' + r.description).join(''\\n''); } catch (e) { return ''Error buscando en Brave Search''; }"
+}',
+            true
+        ) ON CONFLICT DO NOTHING;
+
         -- 2. Calculator Tool
         INSERT INTO public.x7_skills (user_id, name, description, code_payload, is_active)
         VALUES (

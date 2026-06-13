@@ -77,7 +77,7 @@ function extractOpenAIText(body: OpenAIResponseBody) {
     .trim();
 }
 
-async function generateAIAnswer(userId: string, messages: X7ChatMessage[], context: Awaited<ReturnType<typeof getX7DataContext>>) {
+async function generateAIAnswer(userId: string, messages: X7ChatMessage[], context: Awaited<ReturnType<typeof getX7DataContext>>, requestedModelId?: string, webSearch?: boolean) {
   const supabase = await createClient();
   const { data: settings } = await supabase
     .from("x7_user_settings")
@@ -85,11 +85,27 @@ async function generateAIAnswer(userId: string, messages: X7ChatMessage[], conte
     .eq("user_id", userId)
     .single();
 
-  const provider = settings?.active_provider || "openai";
-  const modelName = settings?.active_model || process.env.X7_AI_MODEL || "gpt-4o-mini";
+  let provider = requestedModelId || settings?.active_provider || "openai";
+  let modelName = settings?.active_model || process.env.X7_AI_MODEL || "gpt-4o-mini";
+  let customSystemPrompt: string | null = null;
   
   let apiKey = process.env.OPENAI_API_KEY;
   let customBaseUrl: string | null = null;
+
+  if (provider !== "openai" && provider !== "anthropic") {
+    // Check if it's a Custom Agent (Modelfile)
+    const { data: customAgent } = await supabase
+      .from("x7_agents")
+      .select("*")
+      .eq("id", provider)
+      .single();
+
+    if (customAgent) {
+      customSystemPrompt = customAgent.system_prompt;
+      provider = customAgent.provider || "openai";
+      modelName = customAgent.model || "gpt-4o-mini";
+    }
+  }
 
   if (provider === "openai" && settings?.openai_api_key) apiKey = settings.openai_api_key;
   else if (provider === "anthropic") apiKey = settings?.anthropic_api_key || process.env.ANTHROPIC_API_KEY;
@@ -149,9 +165,10 @@ async function generateAIAnswer(userId: string, messages: X7ChatMessage[], conte
 
   const tools = formatSkillsAsTools(context.skills);
   
-  const systemPrompt = [
+  let systemPrompt = (customSystemPrompt || [
     "Eres X7, el copiloto ejecutivo de Evox Business OS.",
     "Responde en español, con tono claro, estratégico y accionable.",
+  ].join(" ")) + "\n\n" + [
     "Usa solamente el contexto de datos proporcionado por la plataforma.",
     "Si tienes herramientas (skills) disponibles, úsalas cuando el usuario pida acciones que correspondan a ellas.",
     `Contexto de fuentes y memoria a largo plazo:\n${JSON.stringify({ 
@@ -161,6 +178,10 @@ async function generateAIAnswer(userId: string, messages: X7ChatMessage[], conte
     }, null, 2)}`,
     ragContext
   ].join(" ");
+
+  if (webSearch) {
+    systemPrompt += "\n\n[INSTRUCCIÓN CRÍTICA]: El usuario activó explícitamente la búsqueda web. DEBES usar la herramienta 'web_search' o 'brave_search' ahora mismo antes de darle tu respuesta final.";
+  }
 
   const openAiMessages: any[] = [
     { role: "system", content: systemPrompt },
@@ -290,15 +311,102 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "A user message is required" }, { status: 400 });
   }
 
-  const context = await getX7DataContext(user.id);
-  const answer = await generateAIAnswer(user.id, messages, context);
+  const lastUserMessage = messages.at(-1)!.content;
+  let chatId = body.chat_id;
+  let parentId = body.parent_id || null;
 
-  // Intentar comprimir la trayectoria asíncronamente
-  compressTrajectory(user.id, messages).catch(console.error);
+  // Si no hay chat_id, creamos un nuevo chat (Phase 8: Persistence)
+  if (!chatId) {
+    chatId = crypto.randomUUID();
+    const title = lastUserMessage.length > 40 ? lastUserMessage.substring(0, 40) + "..." : lastUserMessage;
+    await supabase.from("x7_chats").insert({
+      id: chatId,
+      user_id: user.id,
+      title: title,
+      updated_at: new Date().toISOString()
+    });
+  } else {
+    // Actualizar el updated_at del chat
+    await supabase.from("x7_chats").update({ updated_at: new Date().toISOString() }).eq("id", chatId);
+  }
+
+  // Guardar el mensaje del usuario en el árbol
+  const userMessageId = crypto.randomUUID();
+  await supabase.from("x7_messages").insert({
+    id: userMessageId,
+    chat_id: chatId,
+    user_id: user.id,
+    parent_id: parentId,
+    role: "user",
+    content: lastUserMessage
+  });
+
+  // Fetch and apply active 'filter' functions (Phase 9)
+  const { data: filterFunctions } = await supabase
+    .from("x7_functions")
+    .select("content")
+    .eq("user_id", user.id)
+    .eq("type", "filter")
+    .eq("is_active", true);
+
+  let processedMessages = [...messages];
+  if (filterFunctions && filterFunctions.length > 0) {
+    for (const func of filterFunctions) {
+      try {
+        const filterExecution = new Function("messages", `
+          ${func.content};
+          if (typeof filter === 'function') {
+            return filter(messages);
+          }
+          return messages;
+        `);
+        processedMessages = filterExecution(processedMessages);
+      } catch (err) {
+        console.error("Error executing pre-filter:", err);
+      }
+    }
+  }
+
+  const context = await getX7DataContext(user.id);
+  let answer = await generateAIAnswer(user.id, processedMessages, context, body.model, body.web_search);
+
+  // Apply post-filters
+  if (filterFunctions && filterFunctions.length > 0) {
+    for (const func of filterFunctions) {
+      try {
+        const postFilterExecution = new Function("answer", `
+          ${func.content};
+          if (typeof postFilter === 'function') {
+            return postFilter(answer);
+          }
+          return answer;
+        `);
+        answer = postFilterExecution(answer);
+      } catch (err) {
+        console.error("Error executing post-filter:", err);
+      }
+    }
+  }
+
+  // Intentar comprimir la trayectoria asíncronamente (Long-term memory)
+  compressTrajectory(user.id, processedMessages).catch(console.error);
+
+  // Guardar el mensaje del asistente en el árbol
+  const assistantMessageId = crypto.randomUUID();
+  await supabase.from("x7_messages").insert({
+    id: assistantMessageId,
+    chat_id: chatId,
+    user_id: user.id,
+    parent_id: userMessageId,
+    role: "assistant",
+    content: answer
+  });
 
   return NextResponse.json({
+    chat_id: chatId,
     message: {
-      id: crypto.randomUUID(),
+      id: assistantMessageId,
+      parent_id: userMessageId,
       role: "assistant",
       content: answer,
       createdAt: new Date().toISOString(),

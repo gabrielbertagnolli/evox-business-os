@@ -78,7 +78,7 @@ BEGIN
     },
     "required": ["coin_id"]
   },
-  "code": "try { const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${args.coin_id}&vs_currencies=usd`); const data = await res.json(); return `El precio de ${args.coin_id} es $${data[args.coin_id].usd}`; } catch (e) { return ''Error consultando precio.''; }"
+  "code": "try { const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${args.coin_id}&vs_currencies=usd`); const data = await res.json(); return `El precio de ${args.coin_id} es $\` + data[args.coin_id].usd; } catch (e) { return ''Error consultando precio.''; }"
 }',
             true
         ) ON CONFLICT DO NOTHING;
