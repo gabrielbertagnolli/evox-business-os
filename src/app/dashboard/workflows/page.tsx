@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { useMountEffect } from "@/hooks/useMountEffect";
 import { GitBranch, Plus, Trash2, Play, Loader2, X, ArrowRight } from "lucide-react";
+import { toast } from "sonner";
 import { PROVIDERS, type ProviderId } from "@/lib/integrations/config";
 
 interface Workflow {
@@ -215,6 +216,12 @@ export default function WorkflowsPage() {
                 <span className="text-xs text-white/25">
                   {wf.run_count} runs
                 </span>
+                <button
+                  onClick={() => toast.info(`Run workflow ${wf.id} - PRÓXIMAMENTE`)}
+                  className="flex items-center gap-1.5 rounded-lg bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-400 transition hover:bg-emerald-500/20"
+                >
+                  <Play size={12} /> Run
+                </button>
                 <button
                   onClick={() => deleteWorkflow(wf.id)}
                   className="rounded-lg p-1.5 text-white/25 transition hover:bg-white/05 hover:text-red-400"

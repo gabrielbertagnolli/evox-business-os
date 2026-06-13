@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable no-restricted-syntax */
 
 import { useState, useRef, useEffect } from "react";
 import { Hash, Users, Send, Loader2, Bot } from "lucide-react";

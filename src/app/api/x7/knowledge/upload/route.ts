@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+// @ts-ignore
+import * as pdfParse from "pdf-parse";
+const pdf = (pdfParse as any).default || pdfParse;
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -28,9 +31,101 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Knowledge base not found or access denied" }, { status: 404 });
     }
 
-    // Read text file content
-    const textContent = await file.text();
+    const { data: settings } = await supabase
+      .from("x7_user_settings")
+      .select("*")
+      .eq("user_id", user.id)
+      .single();
+
+    const provider = settings?.active_provider || "openai";
+    const modelName = settings?.active_model || process.env.X7_AI_MODEL || "gpt-4o-mini";
     
+    let openAiKey = settings?.openai_api_key || process.env.OPENAI_API_KEY;
+    let activeApiKey = openAiKey;
+    let customBaseUrl: string | null = null;
+    let activeModel = modelName;
+
+    // Resolve the final provider from the database
+    const { data: customProvider } = await supabase
+      .from("x7_llm_providers")
+      .select("*")
+      .eq("id", provider)
+      .single();
+    
+    if (customProvider) {
+      customBaseUrl = customProvider.base_url;
+      activeApiKey = customProvider.api_key || "";
+    } else {
+      // Virtual Providers Fallback (Legacy)
+      if (provider.includes("openai")) {
+        activeApiKey = settings?.openai_api_key || process.env.OPENAI_API_KEY || null;
+        customBaseUrl = "https://api.openai.com/v1";
+      } else if (provider.includes("anthropic")) {
+        activeApiKey = settings?.anthropic_api_key || process.env.ANTHROPIC_API_KEY || null;
+      }
+    }
+
+    let ocrModel = "gpt-4o";
+    let ocrEndpoint = "https://api.openai.com/v1/chat/completions";
+    let ocrApiKey = openAiKey;
+    let embedEndpoint = "https://api.openai.com/v1/embeddings";
+
+    if (!openAiKey) {
+      if (!activeApiKey) return NextResponse.json({ error: "No API key available" }, { status: 500 });
+      ocrModel = activeModel;
+      ocrApiKey = activeApiKey;
+      if (customBaseUrl) {
+        ocrEndpoint = `${customBaseUrl.replace(/\/$/, "")}/chat/completions`;
+        embedEndpoint = `${customBaseUrl.replace(/\/$/, "")}/embeddings`;
+      }
+    }
+
+    let textContent = "";
+    
+    if (file.type === "application/pdf") {
+      // PDF Processing
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const pdfData = await pdf(buffer);
+      textContent = pdfData.text;
+    } else if (file.type.startsWith("image/")) {
+      // Image OCR Processing via OpenAI Vision
+      const arrayBuffer = await file.arrayBuffer();
+      const base64Image = Buffer.from(arrayBuffer).toString('base64');
+      
+      const visionRes = await fetch(ocrEndpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${ocrApiKey}`
+        },
+        body: JSON.stringify({
+          model: ocrModel,
+          messages: [
+            {
+              role: "user",
+              content: [
+                { type: "text", text: "Eres un motor OCR altamente preciso. Extrae y transcribe todo el texto visible en esta imagen. Devuelve únicamente el texto extraído sin introducciones ni marcas de markdown a menos que sean tablas. Si no hay texto, responde 'NO_TEXT'." },
+                { type: "image_url", image_url: { url: `data:${file.type};base64,${base64Image}` } }
+              ]
+            }
+          ]
+        })
+      });
+
+      if (!visionRes.ok) throw new Error("Error performing OCR with AI provider");
+      const visionData = await visionRes.json();
+      textContent = visionData.choices[0].message.content || "";
+      if (textContent === "NO_TEXT") textContent = "";
+    } else {
+      // Default plain text processing
+      textContent = await file.text();
+    }
+
+    if (!textContent || textContent.trim() === "") {
+      return NextResponse.json({ error: "No se pudo extraer texto del archivo (posiblemente esté vacío o sea ilegible)" }, { status: 400 });
+    }
+
     // Chunking strategy (approx 1000 characters per chunk with 200 overlap)
     const CHUNK_SIZE = 1000;
     const OVERLAP = 200;
@@ -40,15 +135,12 @@ export async function POST(req: NextRequest) {
       chunks.push(textContent.substring(i, i + CHUNK_SIZE));
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) return NextResponse.json({ error: "OPENAI_API_KEY missing" }, { status: 500 });
-
-    // Generate Embeddings via OpenAI
-    const response = await fetch("https://api.openai.com/v1/embeddings", {
+    // Generate Embeddings
+    const response = await fetch(embedEndpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`
+        "Authorization": `Bearer ${ocrApiKey}`
       },
       body: JSON.stringify({
         input: chunks,

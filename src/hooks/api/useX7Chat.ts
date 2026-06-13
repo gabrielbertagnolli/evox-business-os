@@ -5,6 +5,7 @@ export interface X7Message {
   role: "assistant" | "user";
   content: string;
   createdAt: string;
+  feedback?: number | null;
 }
 
 export interface X7Summary {

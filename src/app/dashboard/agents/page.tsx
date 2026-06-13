@@ -301,9 +301,9 @@ export default function AgentsPage() {
           <p className="mb-1 text-xs font-semibold tracking-[0.18em] text-white/30 uppercase">
             Automation
           </p>
-          <h1 className="text-2xl font-semibold text-white">Agents</h1>
+          <h1 className="text-2xl font-semibold text-white">Lions (Custom Agents)</h1>
           <p className="mt-1 text-sm text-white/40">
-            AI agents that monitor, alert, and execute on your behalf.
+            Tus propios agentes customizados creados por ti para automatizar flujos de trabajo específicos.
           </p>
         </div>
         <button

@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Edit2, Trash2, FileText, Pin, Check, X, Save } from "lucide-react";
+import { Plus, Edit2, Trash2, FileText, Pin, Check, X, Save, Loader2, Sparkles } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { MarkdownRenderer } from "../components/MarkdownRenderer";
+import { toast } from "sonner";
+
 export default function NotesWorkspacePage() {
   const queryClient = useQueryClient();
   const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
@@ -27,15 +29,35 @@ export default function NotesWorkspacePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: "Nueva Nota", content: "" })
       });
-      if (!res.ok) throw new Error("Error creating note");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Error al crear la nota");
+      }
       return await res.json();
     },
     onSuccess: (data) => {
+      // Optimistically add the new note to cache immediately
+      queryClient.setQueryData(["x7-notes"], (oldNotes: any[] | undefined) => {
+        const newNote = {
+          id: data.id,
+          title: "Nueva Nota",
+          content: "",
+          is_pinned: false,
+          updated_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          tags: []
+        };
+        return oldNotes ? [newNote, ...oldNotes] : [newNote];
+      });
       queryClient.invalidateQueries({ queryKey: ["x7-notes"] });
       setActiveNoteId(data.id);
       setDraftTitle("Nueva Nota");
       setDraftContent("");
       setIsEditing(true);
+      toast.success("Nota creada correctamente.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "No se pudo crear la nota. Verifica que la base de datos esté configurada.");
     }
   });
 
@@ -46,23 +68,77 @@ export default function NotesWorkspacePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data)
       });
-      if (!res.ok) throw new Error("Error updating note");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Error al guardar la nota");
+      }
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      // Optimistically update the note in the cache list
+      queryClient.setQueryData(["x7-notes"], (oldNotes: any[] | undefined) => {
+        if (!oldNotes) return [];
+        return oldNotes.map((note) => {
+          if (note.id === variables.id) {
+            return {
+              ...note,
+              ...variables,
+              updated_at: new Date().toISOString()
+            };
+          }
+          return note;
+        });
+      });
       queryClient.invalidateQueries({ queryKey: ["x7-notes"] });
+      toast.success("Nota guardada correctamente.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Error al guardar la nota.");
     }
   });
 
   const deleteNote = useMutation({
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/x7/notes/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Error deleting note");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Error al eliminar la nota");
+      }
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (_, id) => {
+      // Optimistically remove the deleted note from the cache list
+      queryClient.setQueryData(["x7-notes"], (oldNotes: any[] | undefined) => {
+        if (!oldNotes) return [];
+        return oldNotes.filter((note) => note.id !== id);
+      });
       queryClient.invalidateQueries({ queryKey: ["x7-notes"] });
       setActiveNoteId(null);
+      toast.success("Nota eliminada correctamente.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Error al eliminar la nota.");
+    }
+  });
+
+  const enhanceWithAI = useMutation({
+    mutationFn: async (content: string) => {
+      const res = await fetch("/api/x7/notes/enhance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content })
+      });
+      if (!res.ok) {
+        throw new Error("Error al mejorar con IA");
+      }
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      setDraftContent(data.enhancedContent);
+      toast.success("Texto mejorado con AI.");
+    },
+    onError: () => {
+      toast.error("Error al comunicarse con el modelo de AI.");
     }
   });
 
@@ -153,7 +229,16 @@ export default function NotesWorkspacePage() {
 
                 {isEditing ? (
                   <>
-                    <button onClick={() => setIsEditing(false)} className="p-2 text-white/40 hover:bg-white/10 hover:text-white rounded-lg transition-colors">
+                    <button 
+                      onClick={() => enhanceWithAI.mutate(draftContent)} 
+                      disabled={enhanceWithAI.isPending || draftContent.trim().length === 0}
+                      className="flex items-center gap-2 px-3 py-2 bg-[#2d7bff]/20 text-[#2d7bff] hover:bg-[#2d7bff]/30 rounded-lg transition-colors font-medium text-sm disabled:opacity-50"
+                      title="Reescribir y mejorar con AI"
+                    >
+                      {enhanceWithAI.isPending ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                      <span className="hidden sm:inline">Mejorar con AI</span>
+                    </button>
+                    <button onClick={() => setIsEditing(false)} className="p-2 text-white/40 hover:bg-white/10 hover:text-white rounded-lg transition-colors ml-2">
                       <X size={18} />
                     </button>
                     <button onClick={handleSave} className="flex items-center gap-2 px-4 py-2 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 rounded-lg transition-colors font-medium text-sm">
@@ -206,9 +291,10 @@ export default function NotesWorkspacePage() {
             </p>
             <button 
               onClick={() => createNote.mutate()}
-              className="flex items-center gap-2 px-6 py-3 bg-white text-black font-medium rounded-xl hover:bg-white/90 transition-colors"
+              disabled={createNote.isPending}
+              className="flex items-center gap-2 px-6 py-3 bg-white text-black font-medium rounded-xl hover:bg-white/90 transition-colors disabled:opacity-50"
             >
-              <Plus size={18} />
+              {createNote.isPending ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />}
               Crear tu primera nota
             </button>
           </div>

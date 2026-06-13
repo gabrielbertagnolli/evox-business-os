@@ -74,21 +74,55 @@ async function triggerAIResponse(channelId: string, userMessage: string, userId:
   try {
     const supabase = await createClient();
     
-    // Hardcoded simple AI response for now to demonstrate parity, 
-    // ideally it should call OpenAI/Anthropic based on X7Settings.
-    const apiKey = process.env.OPENAI_API_KEY;
+    // Get user active provider settings
+    const { data: settings } = await supabase
+      .from("x7_user_settings")
+      .select("*")
+      .eq("user_id", userId)
+      .single();
+
+    const provider = settings?.active_provider || "openai";
+    const modelName = settings?.active_model || process.env.X7_AI_MODEL || "gpt-4o-mini";
+    
+    let apiKey: string | null = null;
+    let customBaseUrl: string | null = null;
+
+    // Resolve the final provider from the database
+    const { data: customProvider } = await supabase
+      .from("x7_llm_providers")
+      .select("*")
+      .eq("id", provider)
+      .single();
+    
+    if (customProvider) {
+      customBaseUrl = customProvider.base_url;
+      apiKey = customProvider.api_key || "";
+    } else {
+      if (provider.includes("openai")) {
+        apiKey = settings?.openai_api_key || process.env.OPENAI_API_KEY || null;
+        customBaseUrl = "https://api.openai.com/v1";
+      } else if (provider.includes("anthropic")) {
+        apiKey = settings?.anthropic_api_key || process.env.ANTHROPIC_API_KEY || null;
+      }
+    }
+
     if (!apiKey) return;
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    let endpoint = "https://api.openai.com/v1/chat/completions";
+    if (customBaseUrl) {
+      endpoint = `${customBaseUrl.replace(/\/$/, "")}/chat/completions`;
+    }
+
+    const response = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: modelName,
         messages: [
-          { role: "system", content: "You are X7, a helpful AI assistant in a team channel." },
+          { role: "system", content: "Eres X7, un asistente de IA útil en el canal de equipo de Evox." },
           { role: "user", content: userMessage }
         ]
       })
