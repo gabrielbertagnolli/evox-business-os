@@ -122,6 +122,14 @@ async function generateAIAnswer(userId: string, messages: X7ChatMessage[], conte
 
   let provider = requestedModelId || settings?.active_provider || "openai";
   let modelName = settings?.active_model || process.env.X7_AI_MODEL || "gpt-4o-mini";
+
+  // If the provider string contains a colon, split it into provider and actual modelName!
+  if (provider.includes(":")) {
+    const [pId, ...modelParts] = provider.split(":");
+    provider = pId;
+    modelName = modelParts.join(":");
+  }
+
   let customSystemPrompt: string | null = null;
   
   let apiKey = process.env.OPENAI_API_KEY;

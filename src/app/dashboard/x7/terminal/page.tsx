@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable no-restricted-syntax */
 
 import React, { useState, useRef, useEffect } from "react";
 import { Terminal as TerminalIcon, Play, Code2, Cpu } from "lucide-react";

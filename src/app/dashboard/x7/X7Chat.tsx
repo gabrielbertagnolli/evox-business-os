@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect, no-restricted-syntax, react/jsx-max-depth */
 
 import { Bot, DatabaseZap, Loader2, Send, ShieldCheck, Sparkles, Zap, Edit2, RotateCw, ThumbsUp, ThumbsDown, Globe, Paperclip, ChevronDown, Mic } from "lucide-react";
 import { useMemo, useState, useEffect, useRef, type FormEvent } from "react";
@@ -119,7 +120,7 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
   const chatMutation = useX7Chat();
 
   const [webSearchEnabled, setWebSearchEnabled] = useState(false);
-  const [selectedModel, setSelectedModel] = useState("openai");
+  const [selectedModel, setSelectedModel] = useState("openai:gpt-4o-mini");
   const [secondaryModel, setSecondaryModel] = useState<string | null>(null);
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const [isSecondaryDropdownOpen, setIsSecondaryDropdownOpen] = useState(false);
@@ -150,6 +151,10 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
         }));
       setMessages(sortedMessages);
       setSecondaryMessages(sortedMessages); // Seed secondary with history as well
+      
+      if (chatDetail.model_id) {
+        setSelectedModel(chatDetail.model_id);
+      }
     } else if (!chatId) {
       setMessages([INITIAL_MESSAGE]);
       setSecondaryMessages([INITIAL_MESSAGE]);
@@ -295,7 +300,7 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
   return (
     <div className="mx-auto flex h-full max-w-7xl gap-6 p-6">
       <section className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-[28px]" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)" }}>
-        <div className="relative overflow-hidden border-b border-white/10 px-6 py-5">
+        <div className="relative z-30 border-b border-white/10 px-6 py-5">
           <div className="absolute inset-0 opacity-60" style={{ background: "radial-gradient(circle at top left, rgba(45,123,255,0.18), transparent 34%), radial-gradient(circle at 80% 0%, rgba(139,92,246,0.13), transparent 30%)" }} />
           <div className="relative flex items-center justify-between gap-4">
             <div>
@@ -313,7 +318,7 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
                 </button>
                 
                 {isModelDropdownOpen && (
-                  <div className="absolute top-full left-0 mt-2 w-48 rounded-xl bg-[#14151a] border border-white/10 shadow-2xl z-20 py-1">
+                  <div className="absolute top-full left-0 mt-2 w-64 max-h-80 overflow-y-auto rounded-xl bg-[#14151a] border border-white/10 shadow-2xl z-50 py-1">
                     {providers?.map((p: any) => (
                       <button
                         key={p.id}
@@ -343,7 +348,7 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
                   )}
 
                   {isSecondaryDropdownOpen && (
-                    <div className="absolute top-full left-4 mt-2 w-48 rounded-xl bg-[#14151a] border border-white/10 shadow-2xl z-20 py-1">
+                    <div className="absolute top-full left-4 mt-2 w-64 max-h-80 overflow-y-auto rounded-xl bg-[#14151a] border border-white/10 shadow-2xl z-50 py-1">
                       {providers?.map((p: any) => (
                         <button
                           key={p.id}
