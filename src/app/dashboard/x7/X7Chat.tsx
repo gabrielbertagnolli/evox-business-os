@@ -165,6 +165,8 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
   const [secondaryModel, setSecondaryModel] = useState<string | null>(null);
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const [isSecondaryDropdownOpen, setIsSecondaryDropdownOpen] = useState(false);
+  const [primarySearchQuery, setPrimarySearchQuery] = useState("");
+  const [secondarySearchQuery, setSecondarySearchQuery] = useState("");
   const [attachedFile, setAttachedFile] = useState<{ name: string, content: string } | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -172,13 +174,22 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
   // For dual model chat, we need a way to group messages or just send to both
   const [secondaryMessages, setSecondaryMessages] = useState<X7Message[]>([]);
 
-  const { data: providers } = useQuery({
+  const { data: providersData } = useQuery({
     queryKey: ["x7-providers"],
     queryFn: async () => {
       const res = await fetch("/api/x7/providers");
       return await res.json();
     }
   });
+
+  const providers = providersData?.providers || [];
+
+  // Set the default model from the global setting once it loads, if no chat is loaded
+  useEffect(() => {
+    if (!chatId && providersData?.activeModel && selectedModel === "openai:gpt-4o-mini") {
+      setSelectedModel(providersData.activeModel);
+    }
+  }, [providersData?.activeModel, chatId, selectedModel]);
 
   useEffect(() => {
     if (chatDetail && chatDetail.chat?.history?.messages) {
@@ -319,7 +330,8 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
         queryClient.invalidateQueries({ queryKey: ["x7-chats"] });
         router.replace(`/dashboard/x7/${response.chat_id}`);
       }
-    } catch {
+    } catch (error: any) {
+      toast.error(error.message || "Error al enviar el mensaje");
       setMessages((currentMessages) => currentMessages.filter((message) => message.id !== userMessage.id));
       if (secondaryModel) {
         setSecondaryMessages((currentMessages) => currentMessages.filter((message) => message.id !== userMessage.id));
@@ -395,7 +407,16 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
                 
                 {isModelDropdownOpen && (
                   <div className="absolute top-full left-0 mt-2 w-64 max-h-80 overflow-y-auto rounded-xl bg-[#14151a] border border-white/10 shadow-2xl z-50 py-1">
-                    {providers?.map((p: any) => (
+                    <div className="sticky top-0 bg-[#14151a] p-2 border-b border-white/5 z-10">
+                      <input 
+                        type="text" 
+                        placeholder="Buscar modelo..." 
+                        value={primarySearchQuery}
+                        onChange={(e) => setPrimarySearchQuery(e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 rounded-md px-3 py-1.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-[#2d7bff]"
+                      />
+                    </div>
+                    {providers?.filter((p: any) => p.name?.toLowerCase().includes(primarySearchQuery.toLowerCase()) || p.id?.toLowerCase().includes(primarySearchQuery.toLowerCase())).map((p: any) => (
                       <button
                         key={p.id}
                         onClick={() => { setSelectedModel(p.id); setIsModelDropdownOpen(false); }}
@@ -404,6 +425,9 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
                         {p.name}
                       </button>
                     ))}
+                    {providers?.filter((p: any) => p.name?.toLowerCase().includes(primarySearchQuery.toLowerCase()) || p.id?.toLowerCase().includes(primarySearchQuery.toLowerCase())).length === 0 && (
+                      <div className="px-4 py-3 text-sm text-white/40 text-center">No se encontraron modelos</div>
+                    )}
                   </div>
                 )}
 
@@ -425,7 +449,16 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
 
                   {isSecondaryDropdownOpen && (
                     <div className="absolute top-full left-4 mt-2 w-64 max-h-80 overflow-y-auto rounded-xl bg-[#14151a] border border-white/10 shadow-2xl z-50 py-1">
-                      {providers?.map((p: any) => (
+                      <div className="sticky top-0 bg-[#14151a] p-2 border-b border-white/5 z-10">
+                        <input 
+                          type="text" 
+                          placeholder="Buscar modelo..." 
+                          value={secondarySearchQuery}
+                          onChange={(e) => setSecondarySearchQuery(e.target.value)}
+                          className="w-full bg-white/5 border border-white/10 rounded-md px-3 py-1.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-[#2d7bff]"
+                        />
+                      </div>
+                      {providers?.filter((p: any) => p.name?.toLowerCase().includes(secondarySearchQuery.toLowerCase()) || p.id?.toLowerCase().includes(secondarySearchQuery.toLowerCase())).map((p: any) => (
                         <button
                           key={p.id}
                           onClick={() => { setSecondaryModel(p.id); setIsSecondaryDropdownOpen(false); }}
@@ -434,6 +467,9 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
                           {p.name}
                         </button>
                       ))}
+                      {providers?.filter((p: any) => p.name?.toLowerCase().includes(secondarySearchQuery.toLowerCase()) || p.id?.toLowerCase().includes(secondarySearchQuery.toLowerCase())).length === 0 && (
+                        <div className="px-4 py-3 text-sm text-white/40 text-center">No se encontraron modelos</div>
+                      )}
                     </div>
                   )}
                 </div>

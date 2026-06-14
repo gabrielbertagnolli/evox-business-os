@@ -1,3 +1,4 @@
+export const maxDuration = 60;
 import { NextRequest, NextResponse } from "next/server";
 import { getX7DataContext, summarizeX7DataContext } from "@/lib/x7/context";
 import { createClient } from "@/lib/supabase/server";
@@ -148,11 +149,15 @@ export async function POST(req: NextRequest) {
       id: chatId,
       user_id: user.id,
       title: title,
+      model_id: body.model || null,
       updated_at: new Date().toISOString()
     });
   } else {
-    // Actualizar el updated_at del chat
-    await supabase.from("x7_chats").update({ updated_at: new Date().toISOString() }).eq("id", chatId);
+    // Actualizar el updated_at y model_id del chat
+    await supabase.from("x7_chats").update({ 
+      updated_at: new Date().toISOString(),
+      model_id: body.model || null
+    }).eq("id", chatId);
   }
 
   // Guardar el mensaje del usuario en el árbol

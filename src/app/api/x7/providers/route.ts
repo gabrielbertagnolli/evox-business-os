@@ -110,6 +110,8 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  return NextResponse.json(providers);
+  return NextResponse.json({
+    providers,
+    activeModel: settings?.active_model || "openai:gpt-4o-mini"
+  });
 }
-

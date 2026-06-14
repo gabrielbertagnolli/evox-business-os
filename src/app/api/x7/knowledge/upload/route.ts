@@ -65,20 +65,14 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    let ocrModel = "gpt-4o";
+    if (!openAiKey) {
+      return NextResponse.json({ error: "Para procesar documentos en la Base de Conocimientos necesitas configurar la API Key de OpenAI (Embeddings requeridos para búsqueda)." }, { status: 400 });
+    }
+
+    let ocrModel = "gpt-4o-mini";
     let ocrEndpoint = "https://api.openai.com/v1/chat/completions";
     let ocrApiKey = openAiKey;
     let embedEndpoint = "https://api.openai.com/v1/embeddings";
-
-    if (!openAiKey) {
-      if (!activeApiKey) return NextResponse.json({ error: "No API key available" }, { status: 500 });
-      ocrModel = activeModel;
-      ocrApiKey = activeApiKey;
-      if (customBaseUrl) {
-        ocrEndpoint = `${customBaseUrl.replace(/\/$/, "")}/chat/completions`;
-        embedEndpoint = `${customBaseUrl.replace(/\/$/, "")}/embeddings`;
-      }
-    }
 
     let textContent = "";
     

@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useTransition, useRef } from "react";
-import { Key, Database, Zap, Plus, Trash2, Loader2 } from "lucide-react";
+import { Key, Database, Zap, Plus, Trash2, Loader2, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { saveUserSettings, addCustomProvider, deleteCustomProvider } from "@/actions/x7-providers";
+import { useQuery } from "@tanstack/react-query";
 
 interface ProvidersClientPageProps {
   initialSettings: any;
@@ -16,6 +17,21 @@ export default function ProvidersClientPage({ initialSettings, initialCustomProv
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+
+  const [selectedModel, setSelectedModel] = useState(initialSettings?.active_model || "openai:gpt-4o-mini");
+  const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const { data: providersData } = useQuery({
+    queryKey: ["x7-providers"],
+    queryFn: async () => {
+      const res = await fetch("/api/x7/providers");
+      return await res.json();
+    }
+  });
+
+  const providers = providersData?.providers || [];
+  const selectedModelName = providers.find((p: any) => p.id === selectedModel)?.name || selectedModel;
 
   const handleSaveSettings = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -135,15 +151,46 @@ export default function ProvidersClientPage({ initialSettings, initialCustomProv
                 ))}
               </select>
             </div>
-            <div>
+            <div className="relative">
               <label className="mb-1.5 block text-xs font-medium text-white/60">Model Name</label>
-              <input
-                type="text"
-                name="activeModel"
-                defaultValue={initialSettings?.active_model || "gpt-4o-mini"}
-                placeholder="e.g. gpt-4o or claude-3-5-sonnet"
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-white/30"
-              />
+              <input type="hidden" name="activeModel" value={selectedModel} />
+              
+              <button 
+                type="button"
+                onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
+                className="w-full flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-white/30"
+              >
+                <span className="truncate">{selectedModelName}</span>
+                <ChevronDown size={16} className="text-white/50" />
+              </button>
+              
+              {isModelDropdownOpen && (
+                <div className="absolute top-full left-0 mt-2 w-full max-h-60 overflow-y-auto rounded-xl bg-[#14151a] border border-white/10 shadow-2xl z-50 py-1">
+                  <div className="sticky top-0 bg-[#14151a] p-2 border-b border-white/5 z-10">
+                    <input 
+                      type="text" 
+                      placeholder="Buscar modelo..." 
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-full bg-white/5 border border-white/10 rounded-md px-3 py-1.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-[#2d7bff]"
+                    />
+                  </div>
+                  {providers?.filter((p: any) => p.name?.toLowerCase().includes(searchQuery.toLowerCase()) || p.id?.toLowerCase().includes(searchQuery.toLowerCase())).map((p: any) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => { setSelectedModel(p.id); setIsModelDropdownOpen(false); }}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-white/5 transition-colors ${selectedModel === p.id ? "text-[#2d7bff]" : "text-white/80"}`}
+                    >
+                      {p.name}
+                    </button>
+                  ))}
+                  {providers?.filter((p: any) => p.name?.toLowerCase().includes(searchQuery.toLowerCase()) || p.id?.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
+                    <div className="px-4 py-3 text-sm text-white/40 text-center">No se encontraron modelos</div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

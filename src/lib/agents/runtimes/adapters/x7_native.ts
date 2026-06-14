@@ -86,16 +86,16 @@ export class X7NativeAdapter implements RuntimeAdapter {
       .eq("id", provider)
       .single();
     
+    const { data: settings } = await supabase
+      .from("x7_user_settings")
+      .select("*")
+      .eq("user_id", userId)
+      .single();
+
     if (customProvider) {
       customBaseUrl = customProvider.base_url;
       apiKey = customProvider.api_key || "";
     } else {
-      const { data: settings } = await supabase
-        .from("x7_user_settings")
-        .select("*")
-        .eq("user_id", userId)
-        .single();
-
       if (provider.includes("openai")) {
         apiKey = settings?.openai_api_key || process.env.OPENAI_API_KEY || null;
         customBaseUrl = "https://api.openai.com/v1";
@@ -103,16 +103,18 @@ export class X7NativeAdapter implements RuntimeAdapter {
         apiKey = settings?.anthropic_api_key || process.env.ANTHROPIC_API_KEY || null;
       }
     }
-
-    if (!apiKey) {
+    if (!apiKey && !customBaseUrl) {
       return this.buildFallbackAnswer(messages, context);
     }
+
+    // Embeddings always need OpenAI Key since we hardcode text-embedding-3-small
+    const embeddingsKey = settings?.openai_api_key || process.env.OPENAI_API_KEY || null;
 
     // RAG Context
     const lastUserMessage = messages.slice().reverse().find((m: any) => m.role === "user")?.content;
     let ragContext = "";
     
-    if (lastUserMessage) {
+    if (lastUserMessage && embeddingsKey) {
       try {
         let embedEndpoint = "https://api.openai.com/v1/embeddings";
         if (customBaseUrl && customBaseUrl.includes("openai")) {
@@ -121,7 +123,7 @@ export class X7NativeAdapter implements RuntimeAdapter {
         
         const embedRes = await fetch(embedEndpoint, {
           method: "POST",
-          headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+          headers: { "Authorization": `Bearer ${embeddingsKey}`, "Content-Type": "application/json" },
           body: JSON.stringify({ input: lastUserMessage, model: "text-embedding-3-small" })
         });
         
@@ -142,6 +144,8 @@ export class X7NativeAdapter implements RuntimeAdapter {
       } catch (err) {
         console.error("RAG Error:", err);
       }
+    } else if (lastUserMessage && !embeddingsKey) {
+      ragContext = `\n\n[NOTA DEL SISTEMA]: La Base de Conocimientos (RAG) no pudo ser consultada porque no hay una API Key de OpenAI configurada para generar Embeddings. Si el usuario te pide buscar en sus documentos o archivos, dile cortésmente que esa función está desactivada por falta de configuración del motor de embeddings.`;
     }
 
     const tools = formatSkillsAsTools(activeSkills);
@@ -210,6 +214,34 @@ export class X7NativeAdapter implements RuntimeAdapter {
 
     while (loopCount < 5) {
       loopCount++;
+
+      if (provider === "anthropic" && !customBaseUrl) {
+        const anthropicMessages = messages.map(m => ({ role: m.role === "system" ? "user" : m.role, content: m.content }));
+        const response = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": apiKey!,
+            "anthropic-version": "2023-06-01"
+          },
+          body: JSON.stringify({
+            model: modelName,
+            system: systemPrompt,
+            messages: anthropicMessages,
+            max_tokens: 4096,
+            temperature: 0.7
+          })
+        });
+
+        if (!response.ok) {
+          console.error("Anthropic API Error:", await response.text());
+          return this.buildFallbackAnswer(messages, context);
+        }
+
+        const body = await response.json();
+        finalAnswer = body.content?.[0]?.text || "";
+        break; // Tools not supported in this simple shim
+      }
       
       const requestBody: any = {
         model: modelName,
@@ -227,10 +259,6 @@ export class X7NativeAdapter implements RuntimeAdapter {
 
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
-      if (provider === "anthropic") {
-        // Simple shim if we want anthropic direct (not recommended inside standard format loop, but kept for legacy)
-        // In real X7 this is handled by ai sdk, but we are replicating the manual fetch loop
-      }
 
       const response = await fetch(endpoint, {
         method: "POST",
