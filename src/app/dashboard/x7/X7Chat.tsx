@@ -160,6 +160,14 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
   const chatMutation = useX7Chat();
   const secondaryChatMutation = useX7Chat();
 
+  // Track the effective chatId locally so we don't lose it on first-message creation.
+  // This avoids creating a new chat on every message when the prop chatId is undefined.
+  const effectiveChatIdRef = useRef<string | undefined>(chatId);
+  // Keep the ref in sync when the prop changes (e.g. navigating to an existing chat)
+  useEffect(() => {
+    effectiveChatIdRef.current = chatId;
+  }, [chatId]);
+
   const [webSearchEnabled, setWebSearchEnabled] = useState(false);
   const [selectedModel, setSelectedModel] = useState("");
   const [secondaryModel, setSecondaryModel] = useState<string | null>(null);
@@ -296,10 +304,12 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
     setAttachedFile(null);
 
     try {
+      const currentChatId = effectiveChatIdRef.current;
+
       // Primary model request
       const primaryRequest = chatMutation.mutateAsync({
         messages: nextMessages,
-        chatId: chatId,
+        chatId: currentChatId,
         parentId: effectiveParentId !== "x7-welcome" ? effectiveParentId : undefined,
         webSearch: webSearchEnabled,
         model: targetModel
@@ -310,7 +320,7 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
       if (secondaryModel) {
         secondaryRequest = secondaryChatMutation.mutateAsync({
           messages: nextSecondaryMessages,
-          chatId: chatId,
+          chatId: currentChatId,
           parentId: effectiveParentId !== "x7-welcome" ? effectiveParentId : undefined,
           webSearch: webSearchEnabled,
           model: secondaryModel
@@ -326,11 +336,18 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
         setSecondaryMessages((currentMessages) => [...currentMessages, secondaryResponse.message]);
       }
 
-      if (!chatId && response.chat_id) {
+      // If this was a new chat (no chatId prop and no previously assigned id),
+      // store the new chat_id in the ref so subsequent messages reuse it,
+      // and update the URL without triggering a full Next.js navigation/remount.
+      if (!currentChatId && response.chat_id) {
+        effectiveChatIdRef.current = response.chat_id;
         queryClient.invalidateQueries({ queryKey: ["x7-chats"] });
-        router.replace(`/dashboard/x7/${response.chat_id}`);
+        // Use native history API to update URL without remounting the component.
+        // router.replace() causes a full re-render cycle that loses in-flight state.
+        window.history.replaceState(null, "", `/dashboard/x7/${response.chat_id}`);
       }
     } catch (error: any) {
+      console.error("X7Chat submitPrompt error:", error);
       toast.error(error.message || "Error al enviar el mensaje");
       setMessages((currentMessages) => currentMessages.filter((message) => message.id !== userMessage.id));
       if (secondaryModel) {
