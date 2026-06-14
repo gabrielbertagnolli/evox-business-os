@@ -144,6 +144,8 @@ export class X7NativeAdapter implements RuntimeAdapter {
       } catch (err) {
         console.error("RAG Error:", err);
       }
+    } else if (lastUserMessage && !embeddingsKey) {
+      ragContext = `\n\n[NOTA DEL SISTEMA]: La Base de Conocimientos (RAG) no pudo ser consultada porque no hay una API Key de OpenAI configurada para generar Embeddings. Si el usuario te pide buscar en sus documentos o archivos, dile cortésmente que esa función está desactivada por falta de configuración del motor de embeddings.`;
     }
 
     const tools = formatSkillsAsTools(activeSkills);
