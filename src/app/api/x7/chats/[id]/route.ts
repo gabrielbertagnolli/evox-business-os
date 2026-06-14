@@ -84,6 +84,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     id: chat.id,
     user_id: chat.user_id,
     title: chat.title,
+    model_id: chat.model_id,
     chat: {
       title: chat.title,
       history: history
