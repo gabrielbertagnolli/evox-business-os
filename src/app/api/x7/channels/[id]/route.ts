@@ -22,6 +22,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Channel not found" }, { status: 404 });
   }
 
+  // SEC-FIX: Validate the user is a member of the channel or the owner
+  const isOwner = channel.user_id === user.id;
+  const isMember = channel.x7_channel_members?.some((m: any) => m.user_id === user.id);
+
+  if (!isOwner && !isMember) {
+    return NextResponse.json({ error: "Forbidden: Not a member of this channel" }, { status: 403 });
+  }
+
   return NextResponse.json(channel);
 }
 

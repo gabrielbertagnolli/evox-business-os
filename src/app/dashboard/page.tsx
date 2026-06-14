@@ -10,19 +10,19 @@ async function getDashboardStats() {
 
     const [agentsRes, workflowsRes, integrationsRes, logsRes] = await Promise.all([
       supabase.from("x7_agents").select("id, name, updated_at", { count: "exact" }).eq("user_id", user.id),
-      Promise.resolve({ data: [] as any[], count: 0 }), // Mockup for now
-      Promise.resolve({ data: [] as any[], count: 0 }), // Mockup for now
-      Promise.resolve({ data: [] as any[], count: 0 }), // Mockup for now
+      supabase.from("workflows").select("id", { count: "exact" }).eq("user_id", user.id),
+      supabase.from("integrations").select("id", { count: "exact" }).eq("user_id", user.id),
+      supabase.from("run_logs").select("*").eq("user_id", user.id).order('created_at', { ascending: false }).limit(5)
     ]);
 
     return {
       agents: agentsRes.data ?? [],
       agentCount: agentsRes.count ?? 0,
-      activeAgents: agentsRes.count ?? 0, // All agents are "active" in x7_agents for now
-      workflows: [],
-      workflowCount: 0,
-      activeWorkflows: 0,
-      integrations: [],
+      activeAgents: agentsRes.count ?? 0,
+      workflows: workflowsRes.data ?? [],
+      workflowCount: workflowsRes.count ?? 0,
+      activeWorkflows: workflowsRes.count ?? 0,
+      integrations: integrationsRes.data ?? [],
       integrationCount: integrationsRes.count ?? 0,
       recentLogs: logsRes.data ?? [],
     };
@@ -100,7 +100,7 @@ export default async function DashboardPage() {
           icon={Plug}
           label="Integrations"
           value={integrationCount}
-          sub="Próximamente"
+          sub={`${integrationCount} activas`}
           href="/dashboard/integrations"
           color="#2d7bff"
         />
@@ -116,13 +116,11 @@ export default async function DashboardPage() {
           icon={GitBranch}
           label="Workflows"
           value={workflowCount}
-          sub={workflowCount === 0 ? "Próximamente" : `${activeWorkflows} active`}
+          sub={`${activeWorkflows} activos`}
           href="/dashboard/workflows"
           color="#06b6d4"
         />
       </div>
-
-
 
       {/* Recent activity */}
       {stats?.recentLogs && stats.recentLogs.length > 0 && (
@@ -177,7 +175,7 @@ export default async function DashboardPage() {
                   {log.status}
                 </span>
                 <span className="shrink-0 text-[11px] text-white/20">
-                  {new Date(log.started_at).toLocaleDateString()}
+                  {new Date(log.created_at).toLocaleDateString()}
                 </span>
               </div>
             ))}
@@ -195,8 +193,8 @@ export default async function DashboardPage() {
           }}
         >
           <Activity size={20} className="mx-auto mb-3 text-white/15" />
-          <p className="text-sm font-medium text-white/80">Próximamente</p>
-          <p className="text-xs text-white/30">Aquí aparecerán los logs de ejecución de tus automatizaciones.</p>
+          <p className="text-sm font-medium text-white/80">Sin actividad reciente</p>
+          <p className="text-xs text-white/30">Aquí aparecerán los logs de ejecución de tus automatizaciones y procesos.</p>
         </div>
       )}
     </div>

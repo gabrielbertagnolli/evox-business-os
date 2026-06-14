@@ -1,9 +1,10 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect, no-restricted-syntax */
 
-import { useState, useEffect } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import X7Sidebar from "./X7Sidebar";
 
-export default function X7Layout({ children }: { children: React.ReactNode }) {
+export default function X7Layout({ children }: { children: ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -15,18 +16,18 @@ export default function X7Layout({ children }: { children: React.ReactNode }) {
     setMounted(true);
   }, []);
 
-  const toggleSidebar = () => {
-    const newState = !isCollapsed;
-    setIsCollapsed(newState);
-    localStorage.setItem("x7_sidebar_collapsed", String(newState));
-  };
-
-  if (!mounted) return null;
+  if (!mounted) {
+    return <div className="flex h-full min-h-0 opacity-0" />;
+  }
 
   return (
-    <div className="flex h-full w-full overflow-hidden">
-      <X7Sidebar isCollapsed={isCollapsed} onToggle={toggleSidebar} />
-      <div className="flex-1 overflow-hidden relative">{children}</div>
+    <div className="flex h-[calc(100vh-theme(spacing.16))] min-h-0 bg-[#0e101a] overflow-hidden">
+      <X7Sidebar isCollapsed={isCollapsed} onToggle={() => setIsCollapsed(!isCollapsed)} />
+      <main className="flex-1 min-w-0 bg-[#0e101a] h-full flex flex-col relative z-0">
+        <div className="absolute inset-0 overflow-y-auto w-full h-full">
+          {children}
+        </div>
+      </main>
     </div>
   );
 }
