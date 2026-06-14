@@ -241,24 +241,33 @@ export async function POST(req: NextRequest) {
     webSearch: body.web_search
   };
 
-  let answer = await runtimeRegistry.executeChat(agentRuntimeId, chatPayload);
+  let answer: string;
+  try {
+    answer = await runtimeRegistry.executeChat(agentRuntimeId, chatPayload);
 
-  // Apply post-filters
-  if (filterFunctions && filterFunctions.length > 0) {
-    for (const func of filterFunctions) {
-      try {
-        const postFilterExecution = new Function("answer", `
-          ${func.content};
-          if (typeof postFilter === 'function') {
-            return postFilter(answer);
-          }
-          return answer;
-        `);
-        answer = postFilterExecution(answer);
-      } catch (err) {
-        console.error("Error executing post-filter:", err);
+    // Apply post-filters
+    if (filterFunctions && filterFunctions.length > 0) {
+      for (const func of filterFunctions) {
+        try {
+          const postFilterExecution = new Function("answer", `
+            ${func.content};
+            if (typeof postFilter === 'function') {
+              return postFilter(answer);
+            }
+            return answer;
+          `);
+          answer = postFilterExecution(answer);
+        } catch (err) {
+          console.error("Error executing post-filter:", err);
+        }
       }
     }
+  } catch (error: any) {
+    console.error("Error executing chat runtime:", error);
+    return NextResponse.json({
+      error: error.message || "Error interno del modelo LLM",
+      chat_id: chatId
+    }, { status: 500 });
   }
 
   // Intentar comprimir la trayectoria asíncronamente (Long-term memory)

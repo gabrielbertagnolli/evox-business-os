@@ -349,6 +349,15 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
     } catch (error: any) {
       console.error("X7Chat submitPrompt error:", error);
       toast.error(error.message || "Error al enviar el mensaje");
+      
+      const currentChatId = effectiveChatIdRef.current;
+      // Ensure we capture the chat ID if it was created before the error occurred
+      if (!currentChatId && error.chat_id) {
+        effectiveChatIdRef.current = error.chat_id;
+        queryClient.invalidateQueries({ queryKey: ["x7-chats"] });
+        window.history.replaceState(null, "", `/dashboard/x7/${error.chat_id}`);
+      }
+
       setMessages((currentMessages) => currentMessages.filter((message) => message.id !== userMessage.id));
       if (secondaryModel) {
         setSecondaryMessages((currentMessages) => currentMessages.filter((message) => message.id !== userMessage.id));

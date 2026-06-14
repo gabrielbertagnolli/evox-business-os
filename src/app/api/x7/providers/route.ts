@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
     const fetchPromises = customProviders.map(async (provider) => {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
 
         const baseUrl = provider.base_url.replace(/\/$/, "");
         const isGemini = baseUrl.includes("generativelanguage.googleapis.com") && !baseUrl.includes("/openai");

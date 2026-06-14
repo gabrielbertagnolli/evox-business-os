@@ -116,7 +116,7 @@ export class X7NativeAdapter implements RuntimeAdapter {
                        urlLower.includes("together.xyz") ||
                        urlLower.includes("googleapis.com");
       if (needsKey) {
-        return `[Error de Configuración]: El proveedor de IA (${customProvider?.name || provider}) requiere una API Key, pero no la has configurado o está vacía. Por favor, ve a Ajustes -> X7 Providers y agrégala.`;
+        throw new Error(`[Error de Configuración]: El proveedor de IA (${customProvider?.name || provider}) requiere una API Key, pero no la has configurado o está vacía. Por favor, ve a Ajustes -> X7 Providers y agrégala.`);
       }
     }
 
@@ -249,7 +249,7 @@ export class X7NativeAdapter implements RuntimeAdapter {
         if (!response.ok) {
           const errorText = await response.text();
           console.error("Anthropic API Error:", errorText);
-          return `Error de Anthropic: ${errorText.substring(0, 200)}`;
+          throw new Error(`Error de Anthropic: ${errorText.substring(0, 200)}`);
         }
 
         const body = await response.json();
@@ -292,7 +292,7 @@ export class X7NativeAdapter implements RuntimeAdapter {
         if (!response.ok) {
           const errorText = await response.text();
           console.error("Gemini API Error:", errorText);
-          return `Error de Gemini: ${errorText.substring(0, 200)}`;
+          throw new Error(`Error de Gemini: ${errorText.substring(0, 200)}`);
         }
 
         const body = await response.json();
@@ -335,7 +335,7 @@ export class X7NativeAdapter implements RuntimeAdapter {
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`AI API Error:`, errorText);
-        return `Error del proveedor de IA (${response.status}): ${errorText.substring(0, 300)}`;
+        throw new Error(`Error del proveedor de IA (${response.status}): ${errorText.substring(0, 300)}`);
       }
 
       const body = await response.json();

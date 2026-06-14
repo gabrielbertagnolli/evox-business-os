@@ -4,7 +4,7 @@ import { useState, useTransition, useRef } from "react";
 import { Key, Database, Zap, Plus, Trash2, Loader2, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { saveUserSettings, addCustomProvider, deleteCustomProvider } from "@/actions/x7-providers";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface ProvidersClientPageProps {
   initialSettings: any;
@@ -22,6 +22,7 @@ export default function ProvidersClientPage({ initialSettings, initialCustomProv
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  const queryClient = useQueryClient();
   const { data: providersData } = useQuery({
     queryKey: ["x7-providers"],
     queryFn: async () => {
@@ -98,6 +99,8 @@ export default function ProvidersClientPage({ initialSettings, initialCustomProv
         });
         toast.success("Proveedor personalizado añadido correctamente.");
         form.reset();
+        // Force refresh of the models list
+        queryClient.invalidateQueries({ queryKey: ["x7-providers"] });
       } catch (err: any) {
         toast.error("Error al añadir el proveedor: " + err.message);
       }
@@ -110,6 +113,7 @@ export default function ProvidersClientPage({ initialSettings, initialCustomProv
     try {
       await deleteCustomProvider(id);
       toast.success("Proveedor eliminado correctamente.");
+      queryClient.invalidateQueries({ queryKey: ["x7-providers"] });
     } catch (err: any) {
       toast.error("Error al eliminar el proveedor: " + err.message);
     } finally {

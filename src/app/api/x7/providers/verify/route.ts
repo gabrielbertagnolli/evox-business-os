@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     }
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5-second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15-second timeout
 
     const cleanUrl = url.replace(/\/$/, "");
     const res = await fetch(`${cleanUrl}/models`, {

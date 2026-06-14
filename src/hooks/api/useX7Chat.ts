@@ -36,10 +36,13 @@ export function useX7Chat() {
         body: JSON.stringify({ messages, chat_id: chatId, parent_id: parentId, web_search: webSearch, model }),
       });
 
-      const data = (await response.json()) as X7ChatResponse & { error?: string };
+      const data = (await response.json()) as X7ChatResponse & { error?: string, chat_id?: string };
 
       if (!response.ok) {
-        throw new Error(data.error ?? "X7 no pudo responder.");
+        const error = new Error(data.error ?? "X7 no pudo responder.");
+        // Attach chat_id so the UI doesn't lose the created chat ID even if an error occurs
+        (error as any).chat_id = data.chat_id;
+        throw error;
       }
 
       return data;
