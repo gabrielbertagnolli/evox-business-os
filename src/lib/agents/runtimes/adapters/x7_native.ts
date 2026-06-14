@@ -94,7 +94,7 @@ export class X7NativeAdapter implements RuntimeAdapter {
 
     if (customProvider) {
       customBaseUrl = customProvider.base_url;
-      apiKey = customProvider.api_key || "";
+      apiKey = customProvider.api_key || settings?.openai_api_key || process.env.OPENAI_API_KEY || "";
     } else {
       if (provider.includes("openai")) {
         apiKey = settings?.openai_api_key || process.env.OPENAI_API_KEY || null;
@@ -105,6 +105,19 @@ export class X7NativeAdapter implements RuntimeAdapter {
     }
     if (!apiKey && !customBaseUrl) {
       return this.buildFallbackAnswer(messages, context);
+    }
+
+    if (!apiKey && customBaseUrl) {
+      const urlLower = customBaseUrl.toLowerCase();
+      const needsKey = urlLower.includes("openrouter.ai") || 
+                       urlLower.includes("openai.com") || 
+                       urlLower.includes("anthropic.com") || 
+                       urlLower.includes("groq.com") || 
+                       urlLower.includes("together.xyz") ||
+                       urlLower.includes("googleapis.com");
+      if (needsKey) {
+        return `[Error de Configuración]: El proveedor de IA (${customProvider?.name || provider}) requiere una API Key, pero no la has configurado o está vacía. Por favor, ve a Ajustes -> X7 Providers y agrégala.`;
+      }
     }
 
     // Embeddings always need OpenAI Key since we hardcode text-embedding-3-small
@@ -301,8 +314,17 @@ export class X7NativeAdapter implements RuntimeAdapter {
       let endpoint = "https://api.openai.com/v1/chat/completions";
       if (customBaseUrl) endpoint = `${customBaseUrl.replace(/\/$/, "")}/chat/completions`;
 
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
+      const headers: Record<string, string> = { 
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://evox.app",
+        "X-Title": "Evox Business OS" 
+      };
+      
+      if (apiKey) {
+        headers["Authorization"] = `Bearer ${apiKey}`;
+      } else if (customBaseUrl && !customBaseUrl.includes("localhost") && !customBaseUrl.includes("127.0.0.1")) {
+        headers["Authorization"] = `Bearer none`;
+      }
 
       const response = await fetch(endpoint, {
         method: "POST",
