@@ -94,7 +94,7 @@ export class X7NativeAdapter implements RuntimeAdapter {
 
     if (customProvider) {
       customBaseUrl = customProvider.base_url;
-      apiKey = customProvider.api_key || "";
+      apiKey = customProvider.api_key || settings?.openai_api_key || process.env.OPENAI_API_KEY || "";
     } else {
       if (provider.includes("openai")) {
         apiKey = settings?.openai_api_key || process.env.OPENAI_API_KEY || null;
