@@ -80,13 +80,13 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
       remarkPlugins={[remarkGfm]}
       components={{
         code: CodeBlock,
-        p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
+        p: ({ children }) => <p className="mb-1.5 last:mb-0 leading-relaxed text-[13px]">{children}</p>,
         ul: ({ children }) => <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>,
         ol: ({ children }) => <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>,
         li: ({ children }) => <li className="pl-1">{children}</li>,
-        h1: ({ children }) => <h1 className="text-2xl font-bold mb-4 mt-6 text-white">{children}</h1>,
-        h2: ({ children }) => <h2 className="text-xl font-bold mb-3 mt-5 text-white">{children}</h2>,
-        h3: ({ children }) => <h3 className="text-lg font-bold mb-3 mt-4 text-white">{children}</h3>,
+        h1: ({ children }) => <h1 className="text-base font-bold mb-2 mt-4 text-white">{children}</h1>,
+        h2: ({ children }) => <h2 className="text-[15px] font-bold mb-2 mt-3 text-white">{children}</h2>,
+        h3: ({ children }) => <h3 className="text-[14px] font-bold mb-2 mt-3 text-white">{children}</h3>,
         a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-[#2d7bff] hover:underline">{children}</a>,
         blockquote: ({ children }) => (
           <blockquote className="border-l-2 border-[#2d7bff]/50 pl-4 py-1 my-3 text-white/70 italic bg-white/5 rounded-r-lg">

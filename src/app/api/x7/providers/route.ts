@@ -55,16 +55,24 @@ export async function GET(req: NextRequest) {
     const fetchPromises = customProviders.map(async (provider) => {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000); // 3-second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-        const headers: HeadersInit = {
-          "Content-Type": "application/json",
-        };
-        if (provider.api_key) {
-          headers["Authorization"] = `Bearer ${provider.api_key}`;
+        const baseUrl = provider.base_url.replace(/\/$/, "");
+        const isGemini = baseUrl.includes("generativelanguage.googleapis.com");
+
+        let modelsUrl: string;
+        const headers: HeadersInit = { "Content-Type": "application/json" };
+
+        if (isGemini) {
+          modelsUrl = `${baseUrl}/models?key=${provider.api_key || ""}`;
+        } else {
+          modelsUrl = `${baseUrl}/models`;
+          if (provider.api_key) {
+            headers["Authorization"] = `Bearer ${provider.api_key}`;
+          }
         }
 
-        const res = await fetch(`${provider.base_url.replace(/\/$/, "")}/models`, {
+        const res = await fetch(modelsUrl, {
           headers,
           signal: controller.signal,
         });
@@ -76,6 +84,22 @@ export async function GET(req: NextRequest) {
         }
 
         const body = await res.json();
+        
+        if (isGemini) {
+          // Gemini returns { models: [{ name: "models/gemini-2.0-flash", displayName: "Gemini 2.0 Flash", ... }] }
+          const geminiModels = body.models || [];
+          return geminiModels
+            .filter((m: any) => m.supportedGenerationMethods?.includes("generateContent"))
+            .map((m: any) => {
+              const modelId = m.name?.replace("models/", "") || m.name;
+              return {
+                id: `${provider.id}:${modelId}`,
+                name: `${provider.name}: ${m.displayName || modelId}`,
+              };
+            });
+        }
+
+        // OpenAI-compatible format
         const modelsList = Array.isArray(body) ? body : (body.data || []);
         
         return modelsList.map((m: any) => {
@@ -87,7 +111,6 @@ export async function GET(req: NextRequest) {
         });
       } catch (err) {
         console.error(`Failed to fetch models for provider ${provider.name}:`, err);
-        // Fallback: return the provider itself as a single model option
         return [
           {
             id: `${provider.id}:default`,
@@ -112,6 +135,6 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     providers,
-    activeModel: settings?.active_model || "openai:gpt-4o-mini"
+    activeModel: settings?.active_model || (providers.length > 0 ? providers[0].id : "")
   });
 }

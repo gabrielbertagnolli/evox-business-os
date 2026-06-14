@@ -1,7 +1,7 @@
 "use client";
 
 import { useX7Chats } from "@/hooks/api/useX7Chats";
-import { MessageSquare, Plus, Loader2, Folder, ChevronRight, Hash, ShieldCheck, Sparkles, PanelLeftClose, PanelLeftOpen, Pin } from "lucide-react";
+import { MessageSquare, Plus, Loader2, Folder, ChevronRight, Hash, ShieldCheck, Sparkles, PanelLeftClose, PanelLeftOpen, Pin, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -33,6 +33,27 @@ export default function X7Sidebar({ isCollapsed = false, onToggle }: X7SidebarPr
     },
     onError: () => {
       toast.error("Error al actualizar chat");
+    }
+  });
+
+  const deleteChat = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/x7/chats/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Error deleting chat");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["x7-chats"] });
+      // If we're currently viewing the deleted chat, navigate away
+      if (pathname.startsWith("/dashboard/x7/")) {
+        router.push("/dashboard/x7");
+      }
+      toast.success("Chat eliminado");
+    },
+    onError: () => {
+      toast.error("Error al eliminar chat");
     }
   });
 
@@ -132,12 +153,22 @@ export default function X7Sidebar({ isCollapsed = false, onToggle }: X7SidebarPr
                         {!isCollapsed && <span className="truncate">{chat.title}</span>}
                       </Link>
                       {!isCollapsed && (
-                        <button 
-                          onClick={() => togglePin.mutate({ id: chat.id, pinned: false })}
-                          className="absolute right-2 opacity-0 group-hover:opacity-100 p-1.5 hover:bg-white/10 rounded-md text-white/40 hover:text-white transition"
-                        >
-                          <Pin size={12} className="fill-current" />
-                        </button>
+                        <div className="absolute right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition">
+                          <button 
+                            onClick={() => togglePin.mutate({ id: chat.id, pinned: false })}
+                            className="p-1 hover:bg-white/10 rounded-md text-white/40 hover:text-white"
+                            title="Desfijar"
+                          >
+                            <Pin size={12} className="fill-current" />
+                          </button>
+                          <button 
+                            onClick={() => { if (confirm("¿Eliminar este chat?")) deleteChat.mutate(chat.id); }}
+                            className="p-1 hover:bg-red-500/20 rounded-md text-white/40 hover:text-red-400"
+                            title="Eliminar chat"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
                       )}
                     </div>
                   );
@@ -165,12 +196,22 @@ export default function X7Sidebar({ isCollapsed = false, onToggle }: X7SidebarPr
                         {!isCollapsed && <span className="truncate">{chat.title}</span>}
                       </Link>
                       {!isCollapsed && (
-                        <button 
-                          onClick={() => togglePin.mutate({ id: chat.id, pinned: true })}
-                          className="absolute right-2 opacity-0 group-hover:opacity-100 p-1.5 hover:bg-white/10 rounded-md text-white/40 hover:text-white transition"
-                        >
-                          <Pin size={12} />
-                        </button>
+                        <div className="absolute right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition">
+                          <button 
+                            onClick={() => togglePin.mutate({ id: chat.id, pinned: true })}
+                            className="p-1 hover:bg-white/10 rounded-md text-white/40 hover:text-white"
+                            title="Fijar chat"
+                          >
+                            <Pin size={12} />
+                          </button>
+                          <button 
+                            onClick={() => { if (confirm("¿Eliminar este chat?")) deleteChat.mutate(chat.id); }}
+                            className="p-1 hover:bg-red-500/20 rounded-md text-white/40 hover:text-red-400"
+                            title="Eliminar chat"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
                       )}
                     </div>
                   );
