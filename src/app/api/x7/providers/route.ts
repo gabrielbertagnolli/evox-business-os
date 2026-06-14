@@ -61,14 +61,22 @@ export async function GET(req: NextRequest) {
         const isGemini = baseUrl.includes("generativelanguage.googleapis.com");
 
         let modelsUrl: string;
-        const headers: HeadersInit = { "Content-Type": "application/json" };
+        const headers: Record<string, string> = { 
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://evox.app",
+          "X-Title": "Evox Business OS"
+        };
+
+        const effectiveKey = provider.api_key || settings?.openai_api_key || process.env.OPENAI_API_KEY || "";
 
         if (isGemini) {
-          modelsUrl = `${baseUrl}/models?key=${provider.api_key || ""}`;
+          modelsUrl = `${baseUrl}/models?key=${effectiveKey}`;
         } else {
           modelsUrl = `${baseUrl}/models`;
-          if (provider.api_key) {
-            headers["Authorization"] = `Bearer ${provider.api_key}`;
+          if (effectiveKey) {
+            headers["Authorization"] = `Bearer ${effectiveKey}`;
+          } else if (!baseUrl.includes("localhost") && !baseUrl.includes("127.0.0.1")) {
+            headers["Authorization"] = `Bearer none`;
           }
         }
 
