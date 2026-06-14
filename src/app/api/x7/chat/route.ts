@@ -206,8 +206,8 @@ export async function POST(req: NextRequest) {
     id: requestedProvider || 'default',
     name: 'Default Agent',
     systemPrompt: '',
-    provider: requestedProvider,
-    model: 'gpt-4o-mini',
+    provider: requestedProvider || '',
+    model: '',
     tools: []
   };
 

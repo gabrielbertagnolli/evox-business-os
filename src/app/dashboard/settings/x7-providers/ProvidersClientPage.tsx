@@ -18,7 +18,7 @@ export default function ProvidersClientPage({ initialSettings, initialCustomProv
   const [isVerifying, setIsVerifying] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
-  const [selectedModel, setSelectedModel] = useState(initialSettings?.active_model || "openai:gpt-4o-mini");
+  const [selectedModel, setSelectedModel] = useState(initialSettings?.active_model || "");
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 

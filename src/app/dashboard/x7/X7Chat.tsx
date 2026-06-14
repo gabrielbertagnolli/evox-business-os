@@ -80,7 +80,7 @@ function MessageBubble({ message, onRegenerate, onFeedback, onEdit }: { message:
   return (
     <div className={`group flex flex-col ${isUser ? "items-end" : "items-start"}`}>
       <div
-        className={`max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-6 ${isUser ? "text-white" : "text-white/75"}`}
+        className={`max-w-[82%] rounded-2xl px-4 py-2.5 text-[13px] leading-[1.6] ${isUser ? "text-white" : "text-white/75"}`}
         style={{
           background: isUser ? "rgba(45,123,255,0.2)" : "rgba(255,255,255,0.045)",
           border: isUser ? (isEditing ? "1px solid rgba(45,123,255,0.6)" : "1px solid rgba(45,123,255,0.32)") : "1px solid rgba(255,255,255,0.08)",
@@ -161,7 +161,7 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
   const secondaryChatMutation = useX7Chat();
 
   const [webSearchEnabled, setWebSearchEnabled] = useState(false);
-  const [selectedModel, setSelectedModel] = useState("openai:gpt-4o-mini");
+  const [selectedModel, setSelectedModel] = useState("");
   const [secondaryModel, setSecondaryModel] = useState<string | null>(null);
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const [isSecondaryDropdownOpen, setIsSecondaryDropdownOpen] = useState(false);
@@ -186,7 +186,7 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
 
   // Set the default model from the global setting once it loads, if no chat is loaded
   useEffect(() => {
-    if (!chatId && providersData?.activeModel && selectedModel === "openai:gpt-4o-mini") {
+    if (!chatId && providersData?.activeModel && !selectedModel) {
       setSelectedModel(providersData.activeModel);
     }
   }, [providersData?.activeModel, chatId, selectedModel]);
@@ -383,7 +383,7 @@ export default function X7Chat({ chatId }: { chatId?: string }) {
     return <div className="flex h-full items-center justify-center"><Loader2 className="animate-spin text-white/50" /></div>;
   }
 
-  const currentProviderName = providers?.find((p: any) => p.id === selectedModel)?.name || "OpenAI";
+  const currentProviderName = providers?.find((p: any) => p.id === selectedModel)?.name || (selectedModel ? selectedModel.split(":")[0] : "Seleccionar modelo");
 
   return (
     <div className="mx-auto flex h-full max-w-7xl gap-6 p-6">

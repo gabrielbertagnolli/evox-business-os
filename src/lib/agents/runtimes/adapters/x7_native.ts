@@ -60,8 +60,8 @@ export class X7NativeAdapter implements RuntimeAdapter {
     const { userId, messages, context, webSearch, agent } = payload;
     const supabase = await createClient();
 
-    let provider = agent.provider || "openai";
-    let modelName = agent.model || "gpt-4o-mini";
+    let provider = agent.provider || "";
+    let modelName = agent.model || "";
     let apiKey: string | null = null;
     let customBaseUrl: string | null = null;
 
@@ -234,13 +234,57 @@ export class X7NativeAdapter implements RuntimeAdapter {
         });
 
         if (!response.ok) {
-          console.error("Anthropic API Error:", await response.text());
-          return this.buildFallbackAnswer(messages, context);
+          const errorText = await response.text();
+          console.error("Anthropic API Error:", errorText);
+          return `Error de Anthropic: ${errorText.substring(0, 200)}`;
         }
 
         const body = await response.json();
         finalAnswer = body.content?.[0]?.text || "";
-        break; // Tools not supported in this simple shim
+        break;
+      }
+
+      // Google Gemini native API
+      if (customBaseUrl && customBaseUrl.includes("generativelanguage.googleapis.com")) {
+        const geminiContents = [];
+        
+        // System instruction is separate in Gemini
+        const geminiMessages = messages.map(m => ({
+          role: m.role === "assistant" ? "model" : "user",
+          parts: [{ text: m.content }]
+        }));
+        
+        geminiContents.push(...geminiMessages);
+
+        const geminiBody: any = {
+          contents: geminiContents,
+          systemInstruction: {
+            parts: [{ text: systemPrompt }]
+          },
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 8192,
+          }
+        };
+
+        const baseUrl = customBaseUrl.replace(/\/$/, "");
+        const geminiEndpoint = `${baseUrl}/models/${modelName}:generateContent?key=${apiKey}`;
+
+        const response = await fetch(geminiEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(geminiBody),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Gemini API Error:", errorText);
+          return `Error de Gemini: ${errorText.substring(0, 200)}`;
+        }
+
+        const body = await response.json();
+        finalAnswer = body.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        break;
       }
       
       const requestBody: any = {
@@ -269,7 +313,7 @@ export class X7NativeAdapter implements RuntimeAdapter {
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`AI API Error:`, errorText);
-        return this.buildFallbackAnswer(messages, context);
+        return `Error del proveedor de IA (${response.status}): ${errorText.substring(0, 300)}`;
       }
 
       const body = await response.json();
