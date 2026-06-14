@@ -1,3 +1,4 @@
+export const maxDuration = 60;
 import { NextRequest, NextResponse } from "next/server";
 import { getX7DataContext, summarizeX7DataContext } from "@/lib/x7/context";
 import { createClient } from "@/lib/supabase/server";
